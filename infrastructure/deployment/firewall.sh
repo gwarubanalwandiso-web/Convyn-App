@@ -4,19 +4,24 @@ set -euo pipefail
 usage() {
   cat <<'HELP'
 Usage: sudo bash infrastructure/deployment/firewall.sh COMMAND [PORT ...] [OPTIONS]
-Commands: web (allow TCP 80/443), allow, deny, enable, status
+Commands: setup (install UFW, allow SSH/web, deny other incoming, enable),
+          web (allow TCP 80/443), allow, deny, enable, status
 Options: --apply, --protocol tcp|udp, --ssh-port PORT
 Examples:
+  bash infrastructure/deployment/firewall.sh setup --ssh-port 22
+  sudo bash infrastructure/deployment/firewall.sh setup --ssh-port 22 --apply
   bash infrastructure/deployment/firewall.sh web
   sudo bash infrastructure/deployment/firewall.sh web --apply
   sudo bash infrastructure/deployment/firewall.sh allow 8080 8443 --apply
   sudo bash infrastructure/deployment/firewall.sh deny 8080 --apply
   sudo bash infrastructure/deployment/firewall.sh enable --ssh-port 22 --apply
-Preview is the default. Install ufw first. SSH defaults to the current SSH
+Preview is the default. setup installs ufw through apt-get if needed.
+Other commands require ufw to be installed. SSH defaults to the current SSH
 connection's server port, otherwise 22; specify custom ports explicitly.
 Deny adds a priority rule (including ahead of existing allows); allow does the
 same ahead of existing denies. Existing rules are retained. Enable preserves
-existing defaults/rules. This manages host INPUT traffic only: Docker published
+existing defaults/rules. setup sets deny-incoming and allow-outgoing defaults,
+preserving explicit rules (including existing allows). This manages host INPUT traffic only: Docker published
 ports can bypass UFW. Also manage Docker exposure and your provider firewall.
 HELP
 }
@@ -46,8 +51,8 @@ done
 port "$ssh_port" || fail 'Invalid SSH port; specify --ssh-port.'
 ssh_port=$((10#$ssh_port))
 case $command_name in
-  web) (( ${#ports[@]} == 0 )) || fail 'web takes no ports.'
-       [[ $protocol == tcp ]] || fail 'web requires TCP.'; ports=(80 443) ;;
+  setup|web) (( ${#ports[@]} == 0 )) || fail "$command_name takes no ports."
+       [[ $protocol == tcp ]] || fail "$command_name requires TCP."; ports=(80 443) ;;
   allow|deny) (( ${#ports[@]} > 0 )) || fail 'Specify at least one port.' ;;
   enable|status) (( ${#ports[@]} == 0 )) || fail "$command_name takes no ports." ;;
   *) fail "Unknown command: $command_name" ;;
@@ -63,13 +68,21 @@ run() {
 }
 if $apply; then
   (( EUID == 0 )) || fail 'Run with sudo to apply firewall changes.'
-  command -v ufw >/dev/null || fail 'Install ufw first: sudo apt-get install ufw'
+  if ! command -v ufw >/dev/null; then
+    if [[ $command_name == setup ]]; then
+      command -v apt-get >/dev/null || fail 'Automatic installation needs Ubuntu/Debian apt-get.'
+      run apt-get update
+      run apt-get install -y ufw
+    else
+      fail 'Install ufw first: sudo apt-get install ufw'
+    fi
+  fi
 fi
 if [[ $command_name == status ]]; then run ufw status verbose; exit 0; fi
 # Insert first so an existing broad deny cannot block this recovery path.
 run ufw insert 1 allow "$ssh_port/tcp" comment 'CONVYN SSH access'
 case $command_name in
-  web|allow|deny)
+  setup|web|allow|deny)
     action=allow
     [[ $command_name != deny ]] || action=deny
     for p in "${ports[@]}"; do
@@ -77,5 +90,11 @@ case $command_name in
     done ;;
   enable) run ufw --force enable ;;
 esac
+if [[ $command_name == setup ]]; then
+  # Allow required ports before changing policy or activating the firewall.
+  run ufw default deny incoming
+  run ufw default allow outgoing
+  run ufw --force enable
+fi
 run ufw status verbose
 printf '%s\n' 'UFW does not control all Docker-published traffic or the provider firewall.'

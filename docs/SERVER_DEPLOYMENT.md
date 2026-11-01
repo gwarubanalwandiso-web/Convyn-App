@@ -88,11 +88,9 @@ In your hosting-provider firewall, preserve the actual SSH port from your admini
 The host firewall helper previews commands unless `--apply` is supplied. From the server, with provider recovery-console access available:
 
 ```sh
-sudo apt-get install -y ufw
 # Replace 22 with the real SSH port. Preview first.
-bash infrastructure/deployment/firewall.sh web --ssh-port 22
-sudo bash infrastructure/deployment/firewall.sh web --ssh-port 22 --apply
-sudo bash infrastructure/deployment/firewall.sh enable --ssh-port 22 --apply
+bash infrastructure/deployment/firewall.sh setup --ssh-port 22
+sudo bash infrastructure/deployment/firewall.sh setup --ssh-port 22 --apply
 sudo bash infrastructure/deployment/firewall.sh status --apply
 # Examples for additional host ports:
 sudo bash infrastructure/deployment/firewall.sh allow 8080 8443 --ssh-port 22 --apply
@@ -100,7 +98,7 @@ sudo bash infrastructure/deployment/firewall.sh deny 8080 --ssh-port 22 --apply
 sudo bash infrastructure/deployment/firewall.sh allow 51820 --protocol udp --ssh-port 22 --apply
 ```
 
-`allow` and `deny` insert priority rules ahead of existing rules; review existing policy before applying. The script refuses a TCP deny for the protected SSH port, preserves existing rules/defaults, and allows that SSH port from any source to retain access. It does not discover every configured SSH listener. When run over SSH it detects the connection’s server port; explicitly specify it when running through sudo or a console. Verify a second SSH login after enabling the firewall. Enabling UFW preserves existing default policies, so inspect `status` to confirm whether unmatched incoming traffic is denied. This helper is for host traffic: to deny a Docker-published service, remove its port publication or restrict its bind address and update the provider firewall. It cannot change this cloud environment’s outbound network policy. No authenticated web firewall control panel is exposed.
+`allow` and `deny` insert priority rules ahead of existing rules; review existing policy before applying. The script refuses a TCP deny for the protected SSH port, preserves existing rules/defaults, and allows that SSH port from any source to retain access. It does not discover every configured SSH listener. When run over SSH it detects the connection’s server port; explicitly specify it when running through sudo or a console. Verify a second SSH login after enabling the firewall. `setup` installs UFW when missing, allows TCP SSH/80/443, sets deny-incoming and allow-outgoing defaults, and enables UFW. Existing explicit rules remain, so previously allowed ports remain allowed: inspect `status` and deny unwanted ports explicitly. The separate `enable` command preserves defaults. Port 443/UDP is unnecessary for this Compose deployment, which publishes TCP only. PostgreSQL 5432, Redis 6379, API 4000 and portals 3000–3004 remain on private Docker networks and must not be opened publicly. Outbound DNS/HTTPS for certificates and package downloads remains allowed. This helper is for host traffic: to deny a Docker-published service, remove its port publication or restrict its bind address and update the provider firewall. It cannot change this cloud environment’s outbound network policy. No authenticated web firewall control panel is exposed.
 
 Keep `EDGE_BIND=127.0.0.1` while preparing the database and administrator. Validate requirements now:
 

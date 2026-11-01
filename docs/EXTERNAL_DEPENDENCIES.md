@@ -22,3 +22,5 @@ Never record credential values in this register or source control.
 ## Host firewall management
 
 Optional Ubuntu `ufw` package, installed through signed OS repositories on the server. `infrastructure/deployment/firewall.sh` uses its CLI without adding a network service. Docker-published ports and hosting-provider firewall rules require separate management. No new npm dependency.
+
+The firewall `setup` command installs UFW through the server’s configured apt repositories if missing. It requires root, network access to those repositories and provider-console recovery access before activation; it does not configure the provider firewall.

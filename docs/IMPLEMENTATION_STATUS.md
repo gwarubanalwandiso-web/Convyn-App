@@ -49,3 +49,5 @@ Container API/standalone web images, Caddy HTTPS routing, private PostGIS/Redis 
 ## Host firewall helper
 
 Added preview-first UFW allow/deny/web/enable/status commands with validated ports and SSH deny protection. Verified argument rejection, command ordering with a mocked UFW, and Bash syntax; no live firewall or remote changes applied. Docker and provider firewall limitations are documented in SERVER_DEPLOYMENT.md.
+
+Added `firewall.sh setup` for automatic apt-based UFW installation, SSH/80/443 rules, deny-incoming/allow-outgoing defaults and activation. Tested with mocked commands; actual remote firewall remains unverified.
