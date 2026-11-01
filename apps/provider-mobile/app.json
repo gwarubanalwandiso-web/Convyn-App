@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "provider-mobile",
+    "name": "CONVYN Provider",
     "slug": "convyn-provider-mobile",
     "scheme": "provider-mobile",
     "plugins": [

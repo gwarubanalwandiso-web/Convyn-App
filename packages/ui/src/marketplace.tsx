@@ -4,6 +4,14 @@ import { BookingTools, SupportDesk } from './operations';
 import { OrganisationWorkspace } from './organisations';
 import { AdminOperations } from './admin';
 import { DraftEditor, type DraftRequest } from './drafts';
+import { EmptyState } from './empty-state';
+import {
+  AuthShell,
+  WorkspaceShell,
+  PageIntroduction,
+  MetricsStrip,
+  StatusLabel,
+} from './shell';
 type User = { id: string; firstName: string; role: string };
 type Category = { id: string; name: string };
 type RequestRow = DraftRequest & {
@@ -166,38 +174,15 @@ export function Marketplace({
   }
   if (!user)
     return (
-      <section aria-label="Account access">
-        <article>
-          <h2>Sign in</h2>
-          <form onSubmit={(e) => void authenticate(e, false)}>
-            <label>
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            <button disabled={busy}>Sign in</button>
-          </form>
-        </article>
-        {(portal === 'customer' || portal === 'provider') && (
+      <AuthShell portal={portal}>
+        <section aria-label="Account access" className="account-access">
           <article>
-            <h2>Create {portal} account</h2>
-            <form onSubmit={(e) => void authenticate(e, true)}>
-              <label>
-                First name
-                <input name="firstName" autoComplete="given-name" required />
-              </label>
-              <label>
-                Last name
-                <input name="lastName" autoComplete="family-name" required />
-              </label>
+            <p className="eyebrow">Your account / Secure access</p>
+            <h2 id="sign-in">Sign in</h2>
+            <p className="form-introduction">
+              Welcome back. Your workspace is ready.
+            </p>
+            <form onSubmit={(e) => void authenticate(e, false)}>
               <label>
                 Email
                 <input
@@ -208,38 +193,70 @@ export function Marketplace({
                 />
               </label>
               <label>
-                Mobile (+27…)
-                <input name="mobile" type="tel" autoComplete="tel" required />
-              </label>
-              <label>
-                Password (12+ characters)
+                Password
                 <input
                   name="password"
                   type="password"
-                  minLength={12}
-                  maxLength={128}
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   required
                 />
               </label>
-              <label>
-                <input name="consent" type="checkbox" required /> I consent to
-                account data processing.
-              </label>
-              <button disabled={busy}>Create account</button>
+              <button disabled={busy}>Sign in</button>
             </form>
           </article>
-        )}
-        <p role="alert">{error}</p>
-      </section>
+          {(portal === 'customer' || portal === 'provider') && (
+            <article>
+              <h2>Create {portal} account</h2>
+              <form onSubmit={(e) => void authenticate(e, true)}>
+                <label>
+                  First name
+                  <input name="firstName" autoComplete="given-name" required />
+                </label>
+                <label>
+                  Last name
+                  <input name="lastName" autoComplete="family-name" required />
+                </label>
+                <label>
+                  Email
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                  />
+                </label>
+                <label>
+                  Mobile (+27…)
+                  <input name="mobile" type="tel" autoComplete="tel" required />
+                </label>
+                <label>
+                  Password (12+ characters)
+                  <input
+                    name="password"
+                    type="password"
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    required
+                  />
+                </label>
+                <label>
+                  <input name="consent" type="checkbox" required /> I consent to
+                  account data processing.
+                </label>
+                <button disabled={busy}>Create account</button>
+              </form>
+            </article>
+          )}
+          <p role="alert">{error}</p>
+        </section>
+      </AuthShell>
     );
   return (
-    <div>
-      <div className="toolbar">
-        <h2>Welcome, {user.firstName}</h2>
-        <button disabled={busy} onClick={() => void action(refresh)}>
-          Refresh
-        </button>
+    <WorkspaceShell
+      portal={portal}
+      user={user}
+      actions={
         <button
           disabled={busy}
           onClick={() =>
@@ -257,543 +274,663 @@ export function Marketplace({
         >
           Sign out
         </button>
-      </div>
-      <p role="alert">{error}</p>
-      <p role="status">{notice}</p>
-      <p>
-        Development marketplace · online payments, document verification and
-        email delivery are not integrated.
-      </p>
-      {portal === 'customer' && (
-        <article>
-          <h2>Request a service</h2>
-          <form
-            onSubmit={(e) => {
-              const intent = (
-                (e.nativeEvent as SubmitEvent)
-                  .submitter as HTMLButtonElement | null
-              )?.value;
-              const data = values(e);
-              const { scheduledAt, ...rest } = data;
-              void action(async () => {
-                await call(
-                  intent === 'draft'
-                    ? 'service-request-drafts'
-                    : 'service-requests',
+      }
+    >
+      <PageIntroduction portal={portal}>
+        <StatusLabel>Signed in / {user.role}</StatusLabel>
+      </PageIntroduction>
+      <MetricsStrip
+        items={
+          portal === 'admin'
+            ? [
+                {
+                  label: 'Provider reviews',
+                  value: verifications.length,
+                  detail: 'Awaiting verification',
+                },
+                {
+                  label: 'Notifications',
+                  value: notifications.length,
+                  detail: 'Your account activity',
+                },
+              ]
+            : portal === 'business' || portal === 'enterprise'
+              ? [
                   {
-                    ...rest,
-                    ...(scheduledAt
-                      ? {
-                          scheduledAt: new Date(
-                            String(scheduledAt),
-                          ).toISOString(),
-                        }
-                      : {}),
-                    latitude: Number(data.latitude),
-                    longitude: Number(data.longitude),
+                    label: 'Workspace',
+                    value: portal === 'business' ? 'Business' : 'Enterprise',
+                    detail: 'Organisation-scoped access',
                   },
-                );
-                setNotice(
-                  intent === 'draft'
-                    ? 'Draft saved'
-                    : 'Service request published',
-                );
-                await refresh();
-              });
-            }}
-          >
-            <label>
-              Category
-              <select aria-label="Category" name="categoryId" required>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Describe the work
-              <textarea
-                name="description"
-                minLength={20}
-                maxLength={5000}
-                required
-              />
-            </label>
-            <label>
-              Urgency
-              <select name="urgency">
-                <option>STANDARD</option>
-                <option>URGENT</option>
-                <option>EMERGENCY</option>
-              </select>
-            </label>
-            <label>
-              Latitude
-              <input
-                name="latitude"
-                type="number"
-                step="any"
-                min={-90}
-                max={90}
-                defaultValue={-33.96}
-                required
-              />
-            </label>
-            <label>
-              Longitude
-              <input
-                name="longitude"
-                type="number"
-                step="any"
-                min={-180}
-                max={180}
-                defaultValue={25.6}
-                required
-              />
-            </label>
-            <label>
-              Scheduled service time (optional)
-              <input name="scheduledAt" type="datetime-local" />
-            </label>
-            <label>
-              Additional instructions
-              <textarea name="instructions" maxLength={2000} />
-            </label>
-            <button disabled={busy} value="publish">
-              Publish request
+                  {
+                    label: 'Notifications',
+                    value: notifications.length,
+                    detail: 'Your account activity',
+                  },
+                ]
+              : [
+                  {
+                    label: portal === 'provider' ? 'Opportunities' : 'Requests',
+                    value: requests.filter(
+                      (r) => r.publishedAt && !r.cancelledAt,
+                    ).length,
+                    detail: 'Available in this workspace',
+                  },
+                  {
+                    label: 'Bookings',
+                    value: bookings.length,
+                    detail: 'Your service register',
+                  },
+                  {
+                    label: 'Notifications',
+                    value: notifications.length,
+                    detail: 'Your account activity',
+                  },
+                ]
+        }
+      />
+      <div className="workspace-content-grid">
+        <div className="workflow-region">
+          <div className="toolbar">
+            <h2>Welcome, {user.firstName}</h2>
+            <button disabled={busy} onClick={() => void action(refresh)}>
+              Refresh
             </button>
-            <button disabled={busy} value="draft" formNoValidate>
-              Save draft
-            </button>
-          </form>
-        </article>
-      )}
-      {portal === 'customer' && (
-        <article>
-          <h2>Saved request drafts</h2>
-          {requests
-            .filter((request) => !request.publishedAt && !request.cancelledAt)
-            .map((request) => (
-              <DraftEditor
-                key={request.id}
-                request={request}
-                categories={categories}
-                call={call}
-                onChange={refresh}
-              />
-            ))}
-        </article>
-      )}
-      {portal === 'provider' && (
-        <article>
-          <h2>Provider verification</h2>
-          <p>Status: {providerStatus}</p>
-          <form
-            onSubmit={(e) => {
-              const data = values(e);
-              void action(async () => {
-                await call('providers/verification', {
-                  qualification: data.qualification,
-                  categories: [data.categoryId],
-                  radiusKm: Number(data.radiusKm),
-                  latitude: Number(data.latitude),
-                  longitude: Number(data.longitude),
-                });
-                setNotice('Verification submitted for review');
-                await refresh();
-              });
-            }}
-          >
-            <label>
-              Qualification details
-              <textarea name="qualification" minLength={20} required />
-            </label>
-            <label>
-              Category
-              <select aria-label="Category" name="categoryId">
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Radius (km)
-              <input
-                name="radiusKm"
-                type="number"
-                min={1}
-                max={200}
-                defaultValue={30}
-              />
-            </label>
-            <label>
-              Latitude
-              <input
-                name="latitude"
-                type="number"
-                step="any"
-                defaultValue={-33.96}
-              />
-            </label>
-            <label>
-              Longitude
-              <input
-                name="longitude"
-                type="number"
-                step="any"
-                defaultValue={25.6}
-              />
-            </label>
-            <button
-              disabled={
-                busy ||
-                !['DRAFT', 'MORE_INFORMATION_REQUIRED', 'REJECTED'].includes(
-                  providerStatus,
+          </div>
+          <p role="alert">{error}</p>
+          <p role="status">{notice}</p>
+
+          {portal === 'customer' && (
+            <article id="requests">
+              <p className="eyebrow">01 / New request</p>
+              <h2>Request a service</h2>
+              <form
+                onSubmit={(e) => {
+                  const intent = (
+                    (e.nativeEvent as SubmitEvent)
+                      .submitter as HTMLButtonElement | null
+                  )?.value;
+                  const data = values(e);
+                  const { scheduledAt, ...rest } = data;
+                  void action(async () => {
+                    await call(
+                      intent === 'draft'
+                        ? 'service-request-drafts'
+                        : 'service-requests',
+                      {
+                        ...rest,
+                        ...(scheduledAt
+                          ? {
+                              scheduledAt: new Date(
+                                String(scheduledAt),
+                              ).toISOString(),
+                            }
+                          : {}),
+                        latitude: Number(data.latitude),
+                        longitude: Number(data.longitude),
+                      },
+                    );
+                    setNotice(
+                      intent === 'draft'
+                        ? 'Draft saved'
+                        : 'Service request published',
+                    );
+                    await refresh();
+                  });
+                }}
+              >
+                <label>
+                  Category
+                  <select aria-label="Category" name="categoryId" required>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Describe the work
+                  <textarea
+                    name="description"
+                    minLength={20}
+                    maxLength={5000}
+                    required
+                  />
+                </label>
+                <label>
+                  Urgency
+                  <select name="urgency">
+                    <option>STANDARD</option>
+                    <option>URGENT</option>
+                    <option>EMERGENCY</option>
+                  </select>
+                </label>
+                <label>
+                  Latitude
+                  <input
+                    name="latitude"
+                    type="number"
+                    step="any"
+                    min={-90}
+                    max={90}
+                    defaultValue={-33.96}
+                    required
+                  />
+                </label>
+                <label>
+                  Longitude
+                  <input
+                    name="longitude"
+                    type="number"
+                    step="any"
+                    min={-180}
+                    max={180}
+                    defaultValue={25.6}
+                    required
+                  />
+                </label>
+                <label>
+                  Scheduled service time (optional)
+                  <input name="scheduledAt" type="datetime-local" />
+                </label>
+                <label>
+                  Additional instructions
+                  <textarea name="instructions" maxLength={2000} />
+                </label>
+                <button disabled={busy} value="publish">
+                  Publish request
+                </button>
+                <button disabled={busy} value="draft" formNoValidate>
+                  Save draft
+                </button>
+              </form>
+            </article>
+          )}
+          {portal === 'customer' && (
+            <article id="drafts">
+              <h2>Saved request drafts</h2>
+              {!requests.some((r) => !r.publishedAt && !r.cancelledAt) && (
+                <EmptyState title="A place for your next request">
+                  Save a request as a draft to finish and publish it later.
+                </EmptyState>
+              )}
+              {requests
+                .filter(
+                  (request) => !request.publishedAt && !request.cancelledAt,
                 )
-              }
-            >
-              Submit for review
-            </button>
-          </form>
-          <button
-            disabled={busy || providerStatus !== 'APPROVED'}
-            onClick={() =>
-              void action(async () => {
-                await call(
-                  'providers/availability',
-                  { available: true },
-                  token,
-                  'PATCH',
-                );
-                await refresh();
-                setNotice('You are online');
-              })
-            }
-          >
-            Go online
-          </button>
-          <button
-            disabled={busy || providerStatus !== 'APPROVED'}
-            onClick={() =>
-              void action(async () => {
-                await call(
-                  'providers/availability',
-                  { available: false },
-                  token,
-                  'PATCH',
-                );
-                await refresh();
-                setNotice('You are offline');
-              })
-            }
-          >
-            Go offline
-          </button>
-        </article>
-      )}
-      {portal === 'admin' && (
-        <section aria-label="Verification queue">
-          {verifications.map((v) => (
-            <article key={v.id}>
-              <h3>
-                {v.user.firstName} {v.user.lastName}
-              </h3>
-              <p>{v.qualification}</p>
-              <p>{v.verification}</p>
-              {[
-                'UNDER_REVIEW',
-                'MORE_INFORMATION_REQUIRED',
-                'APPROVED',
-                'REJECTED',
-              ].map((status) => (
+                .map((request) => (
+                  <DraftEditor
+                    key={request.id}
+                    request={request}
+                    categories={categories}
+                    call={call}
+                    onChange={refresh}
+                  />
+                ))}
+            </article>
+          )}
+          {portal === 'provider' && (
+            <article id="verification">
+              <h2>Provider verification</h2>
+              <p>
+                Status:{' '}
+                <StatusLabel>{providerStatus || 'Not submitted'}</StatusLabel>
+              </p>
+              <form
+                onSubmit={(e) => {
+                  const data = values(e);
+                  void action(async () => {
+                    await call('providers/verification', {
+                      qualification: data.qualification,
+                      categories: [data.categoryId],
+                      radiusKm: Number(data.radiusKm),
+                      latitude: Number(data.latitude),
+                      longitude: Number(data.longitude),
+                    });
+                    setNotice('Verification submitted for review');
+                    await refresh();
+                  });
+                }}
+              >
+                <label>
+                  Qualification details
+                  <textarea name="qualification" minLength={20} required />
+                </label>
+                <label>
+                  Category
+                  <select aria-label="Category" name="categoryId">
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Radius (km)
+                  <input
+                    name="radiusKm"
+                    type="number"
+                    min={1}
+                    max={200}
+                    defaultValue={30}
+                  />
+                </label>
+                <label>
+                  Latitude
+                  <input
+                    name="latitude"
+                    type="number"
+                    step="any"
+                    defaultValue={-33.96}
+                  />
+                </label>
+                <label>
+                  Longitude
+                  <input
+                    name="longitude"
+                    type="number"
+                    step="any"
+                    defaultValue={25.6}
+                  />
+                </label>
                 <button
-                  disabled={busy}
-                  key={status}
-                  onClick={() =>
-                    void action(async () => {
-                      await call('admin/verifications/' + v.id, { status });
-                      await refresh();
-                    })
+                  disabled={
+                    busy ||
+                    ![
+                      'DRAFT',
+                      'MORE_INFORMATION_REQUIRED',
+                      'REJECTED',
+                    ].includes(providerStatus)
                   }
                 >
-                  {status.replaceAll('_', ' ')}
+                  Submit for review
                 </button>
-              ))}
+              </form>
+              <button
+                disabled={busy || providerStatus !== 'APPROVED'}
+                onClick={() =>
+                  void action(async () => {
+                    await call(
+                      'providers/availability',
+                      { available: true },
+                      token,
+                      'PATCH',
+                    );
+                    await refresh();
+                    setNotice('You are online');
+                  })
+                }
+              >
+                Go online
+              </button>
+              <button
+                disabled={busy || providerStatus !== 'APPROVED'}
+                onClick={() =>
+                  void action(async () => {
+                    await call(
+                      'providers/availability',
+                      { available: false },
+                      token,
+                      'PATCH',
+                    );
+                    await refresh();
+                    setNotice('You are offline');
+                  })
+                }
+              >
+                Go offline
+              </button>
             </article>
-          ))}
-        </section>
-      )}
-      {(portal === 'customer' || portal === 'provider') && (
-        <>
-          <h2>
-            {portal === 'customer' ? 'Your requests' : 'Eligible opportunities'}
-          </h2>
-          {requests.length === 0 && <p>No requests to show.</p>}
-          <section>
-            {requests
-              .filter(
-                (request) =>
-                  portal === 'provider' ||
-                  (request.publishedAt && !request.cancelledAt),
-              )
-              .map((request) => (
-                <article key={request.id}>
-                  <h3>{request.description}</h3>
-                  <p>{request.urgency}</p>
-                  {portal === 'customer' ? (
+          )}
+          {portal === 'admin' && (
+            <section id="verification" aria-label="Verification queue">
+              {verifications.length === 0 && (
+                <EmptyState title="No providers awaiting review">
+                  New provider submissions will appear here for verification.
+                </EmptyState>
+              )}
+              {verifications.map((v) => (
+                <article key={v.id}>
+                  <h3>
+                    {v.user.firstName} {v.user.lastName}
+                  </h3>
+                  <p>{v.qualification}</p>
+                  <p>
+                    <StatusLabel>{v.verification}</StatusLabel>
+                  </p>
+                  {[
+                    'UNDER_REVIEW',
+                    'MORE_INFORMATION_REQUIRED',
+                    'APPROVED',
+                    'REJECTED',
+                  ].map((status) => (
                     <button
                       disabled={busy}
+                      key={status}
                       onClick={() =>
                         void action(async () => {
-                          setSelected(request.id);
-                          setBids(
-                            await call<Bid[]>(
-                              'service-requests/' + request.id + '/bids',
-                            ),
-                          );
-                          const ranking = await call<{
-                            providers: { id: string; score: number }[];
-                            explanation: string;
-                          }>(
-                            'service-requests/' +
-                              request.id +
-                              '/recommendations',
-                          );
-                          setScores(
-                            Object.fromEntries(
-                              ranking.providers.map((provider) => [
-                                provider.id,
-                                provider.score,
-                              ]),
-                            ),
-                          );
-                          setScoringExplanation(ranking.explanation);
+                          await call('admin/verifications/' + v.id, { status });
+                          await refresh();
                         })
                       }
                     >
-                      Compare bids
+                      {status.replaceAll('_', ' ')}
                     </button>
-                  ) : (
-                    <form
-                      onSubmit={(e) => {
-                        const data = values(e);
-                        void action(async () => {
-                          await call(
-                            'service-requests/' + request.id + '/bids',
-                            {
-                              totalMinor: Number(data.totalMinor),
-                              arrivalMinutes: Number(data.arrivalMinutes),
-                              comment: data.comment,
-                              expiresAt: new Date(
-                                Date.now() + 3600000,
-                              ).toISOString(),
-                            },
-                          );
-                          setNotice('Bid submitted, valid for one hour');
-                        });
-                      }}
-                    >
-                      <label>
-                        Total quote (ZAR cents)
-                        <input
-                          name="totalMinor"
-                          type="number"
-                          min={1}
-                          max={100000000}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Arrival in minutes
-                        <input
-                          name="arrivalMinutes"
-                          type="number"
-                          min={1}
-                          max={10080}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Quote explanation
-                        <textarea name="comment" minLength={5} required />
-                      </label>
-                      <button disabled={busy}>Submit bid</button>
-                    </form>
-                  )}
+                  ))}
                 </article>
               ))}
-          </section>
-        </>
-      )}
-      {selected && portal === 'customer' && (
-        <>
-          <h2>Compare bids</h2>
-          <p>{scoringExplanation}</p>
-          {bids.length === 0 && <p>No valid bids yet.</p>}
-          <section>
-            {bids.map((bid) => (
-              <article key={bid.id}>
-                <h3>
-                  {bid.provider.user.firstName} {bid.provider.user.lastName}
-                </h3>
-                <p>
-                  {new Intl.NumberFormat('en-ZA', {
-                    style: 'currency',
-                    currency: 'ZAR',
-                  }).format(Number(bid.totalMinor) / 100)}
-                </p>
-                <p>Arrival: {bid.arrivalMinutes} minutes</p>
-                {scores[bid.provider.id] !== undefined && (
-                  <p>
-                    Advisory suitability: {scores[bid.provider.id].toFixed(1)} /
-                    100
-                  </p>
-                )}
-                <p>{bid.comment}</p>
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    void action(async () => {
-                      await call('bids/' + bid.id + '/accept', {});
-                      setBids([]);
-                      setSelected('');
-                      setNotice(
-                        'Booking created. No online payment has been taken.',
-                      );
-                      await refresh();
-                    })
-                  }
-                >
-                  Accept quotation
-                </button>
-              </article>
-            ))}
-          </section>
-        </>
-      )}
-      {(portal === 'customer' || portal === 'provider') && (
-        <>
-          <h2>Your bookings</h2>
-          <section>
-            {bookings.map((booking) => (
-              <article key={booking.id}>
-                <h3>{booking.request.description}</h3>
-                <p>{booking.status.replaceAll('_', ' ')}</p>
-                {portal === 'provider' &&
-                  ['CONFIRMED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS'].includes(
-                    booking.status,
-                  ) && (
-                    <form
-                      onSubmit={(e) => {
-                        const data = values(e);
-                        const next: Record<string, string> = {
-                          CONFIRMED: 'EN_ROUTE',
-                          EN_ROUTE: 'ARRIVED',
-                          ARRIVED: 'IN_PROGRESS',
-                          IN_PROGRESS: 'AWAITING_CONFIRMATION',
-                        };
-                        void action(async () => {
-                          await call('bookings/' + booking.id + '/status', {
-                            status: next[booking.status],
-                            ...(data.completionNote
-                              ? { completionNote: data.completionNote }
-                              : {}),
-                          });
-                          await refresh();
-                        });
-                      }}
-                    >
-                      {booking.status === 'IN_PROGRESS' && (
-                        <label>
-                          Completion details
-                          <textarea
-                            name="completionNote"
-                            minLength={10}
-                            required
-                          />
-                        </label>
+            </section>
+          )}
+          {(portal === 'customer' || portal === 'provider') && (
+            <>
+              <h2 id={portal === 'provider' ? 'requests' : 'request-register'}>
+                {portal === 'customer'
+                  ? 'Your requests'
+                  : 'Eligible opportunities'}
+              </h2>
+              {requests.length === 0 && <p>No requests to show.</p>}
+              <section>
+                {requests
+                  .filter(
+                    (request) =>
+                      portal === 'provider' ||
+                      (request.publishedAt && !request.cancelledAt),
+                  )
+                  .map((request) => (
+                    <article key={request.id}>
+                      <h3>{request.description}</h3>
+                      <p>{request.urgency}</p>
+                      {portal === 'customer' ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void action(async () => {
+                              setSelected(request.id);
+                              setBids(
+                                await call<Bid[]>(
+                                  'service-requests/' + request.id + '/bids',
+                                ),
+                              );
+                              const ranking = await call<{
+                                providers: { id: string; score: number }[];
+                                explanation: string;
+                              }>(
+                                'service-requests/' +
+                                  request.id +
+                                  '/recommendations',
+                              );
+                              setScores(
+                                Object.fromEntries(
+                                  ranking.providers.map((provider) => [
+                                    provider.id,
+                                    provider.score,
+                                  ]),
+                                ),
+                              );
+                              setScoringExplanation(ranking.explanation);
+                            })
+                          }
+                        >
+                          Compare bids
+                        </button>
+                      ) : (
+                        <form
+                          onSubmit={(e) => {
+                            const data = values(e);
+                            void action(async () => {
+                              await call(
+                                'service-requests/' + request.id + '/bids',
+                                {
+                                  totalMinor: Number(data.totalMinor),
+                                  arrivalMinutes: Number(data.arrivalMinutes),
+                                  comment: data.comment,
+                                  expiresAt: new Date(
+                                    Date.now() + 3600000,
+                                  ).toISOString(),
+                                },
+                              );
+                              setNotice('Bid submitted, valid for one hour');
+                            });
+                          }}
+                        >
+                          <label>
+                            Total quote (ZAR cents)
+                            <input
+                              name="totalMinor"
+                              type="number"
+                              min={1}
+                              max={100000000}
+                              required
+                            />
+                          </label>
+                          <label>
+                            Arrival in minutes
+                            <input
+                              name="arrivalMinutes"
+                              type="number"
+                              min={1}
+                              max={10080}
+                              required
+                            />
+                          </label>
+                          <label>
+                            Quote explanation
+                            <textarea name="comment" minLength={5} required />
+                          </label>
+                          <button disabled={busy}>Submit bid</button>
+                        </form>
                       )}
-                      <button disabled={busy}>Advance job</button>
-                    </form>
-                  )}
-                {portal === 'customer' &&
-                  booking.status === 'AWAITING_CONFIRMATION' && (
+                    </article>
+                  ))}
+              </section>
+            </>
+          )}
+          {selected && portal === 'customer' && (
+            <>
+              <h2>Compare bids</h2>
+              <p>{scoringExplanation}</p>
+              {bids.length === 0 && <p>No valid bids yet.</p>}
+              <section>
+                {bids.map((bid) => (
+                  <article key={bid.id}>
+                    <h3>
+                      {bid.provider.user.firstName} {bid.provider.user.lastName}
+                    </h3>
+                    <p>
+                      {new Intl.NumberFormat('en-ZA', {
+                        style: 'currency',
+                        currency: 'ZAR',
+                      }).format(Number(bid.totalMinor) / 100)}
+                    </p>
+                    <p>Arrival: {bid.arrivalMinutes} minutes</p>
+                    {scores[bid.provider.id] !== undefined && (
+                      <p>
+                        Advisory suitability:{' '}
+                        {scores[bid.provider.id].toFixed(1)} / 100
+                      </p>
+                    )}
+                    <p>{bid.comment}</p>
                     <button
                       disabled={busy}
                       onClick={() =>
                         void action(async () => {
-                          await call('bookings/' + booking.id + '/status', {
-                            status: 'COMPLETED',
-                          });
+                          await call('bids/' + bid.id + '/accept', {});
+                          setBids([]);
+                          setSelected('');
+                          setNotice(
+                            'Booking created. No online payment has been taken.',
+                          );
                           await refresh();
                         })
                       }
                     >
-                      Confirm completion
+                      Accept quotation
                     </button>
-                  )}
-                {portal === 'customer' &&
-                  booking.status === 'COMPLETED' &&
-                  !booking.review && (
-                    <form
-                      onSubmit={(e) => {
-                        const data = values(e);
-                        void action(async () => {
-                          await call('bookings/' + booking.id + '/reviews', {
-                            rating: Number(data.rating),
-                            comment: data.comment,
-                          });
-                          await refresh();
-                        });
-                      }}
-                    >
-                      <label>
-                        Rating
-                        <select name="rating">
-                          {[5, 4, 3, 2, 1].map((n) => (
-                            <option key={n}>{n}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Review
-                        <textarea name="comment" minLength={5} required />
-                      </label>
-                      <button disabled={busy}>Submit review</button>
-                    </form>
-                  )}
-                <BookingTools
-                  bookingId={booking.id}
-                  status={booking.status}
-                  role={portal}
-                  userId={user.id}
-                  token={token}
-                  call={call}
-                  onChange={refresh}
-                />
-              </article>
+                  </article>
+                ))}
+              </section>
+            </>
+          )}
+          {(portal === 'customer' || portal === 'provider') && (
+            <>
+              <h2 id="bookings">Your bookings</h2>
+              {bookings.length === 0 && (
+                <EmptyState title="Your service register starts here">
+                  Accepted quotes create bookings. Progress, conversations and
+                  invoices will appear with each booking.
+                </EmptyState>
+              )}
+              <section>
+                {bookings.map((booking) => (
+                  <article key={booking.id}>
+                    <h3>{booking.request.description}</h3>
+                    <p>
+                      <StatusLabel>
+                        {booking.status.replaceAll('_', ' ')}
+                      </StatusLabel>
+                    </p>
+                    {portal === 'provider' &&
+                      [
+                        'CONFIRMED',
+                        'EN_ROUTE',
+                        'ARRIVED',
+                        'IN_PROGRESS',
+                      ].includes(booking.status) && (
+                        <form
+                          onSubmit={(e) => {
+                            const data = values(e);
+                            const next: Record<string, string> = {
+                              CONFIRMED: 'EN_ROUTE',
+                              EN_ROUTE: 'ARRIVED',
+                              ARRIVED: 'IN_PROGRESS',
+                              IN_PROGRESS: 'AWAITING_CONFIRMATION',
+                            };
+                            void action(async () => {
+                              await call('bookings/' + booking.id + '/status', {
+                                status: next[booking.status],
+                                ...(data.completionNote
+                                  ? { completionNote: data.completionNote }
+                                  : {}),
+                              });
+                              await refresh();
+                            });
+                          }}
+                        >
+                          {booking.status === 'IN_PROGRESS' && (
+                            <label>
+                              Completion details
+                              <textarea
+                                name="completionNote"
+                                minLength={10}
+                                required
+                              />
+                            </label>
+                          )}
+                          <button disabled={busy}>Advance job</button>
+                        </form>
+                      )}
+                    {portal === 'customer' &&
+                      booking.status === 'AWAITING_CONFIRMATION' && (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void action(async () => {
+                              await call('bookings/' + booking.id + '/status', {
+                                status: 'COMPLETED',
+                              });
+                              await refresh();
+                            })
+                          }
+                        >
+                          Confirm completion
+                        </button>
+                      )}
+                    {portal === 'customer' &&
+                      booking.status === 'COMPLETED' &&
+                      !booking.review && (
+                        <form
+                          onSubmit={(e) => {
+                            const data = values(e);
+                            void action(async () => {
+                              await call(
+                                'bookings/' + booking.id + '/reviews',
+                                {
+                                  rating: Number(data.rating),
+                                  comment: data.comment,
+                                },
+                              );
+                              await refresh();
+                            });
+                          }}
+                        >
+                          <label>
+                            Rating
+                            <select name="rating">
+                              {[5, 4, 3, 2, 1].map((n) => (
+                                <option key={n}>{n}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Review
+                            <textarea name="comment" minLength={5} required />
+                          </label>
+                          <button disabled={busy}>Submit review</button>
+                        </form>
+                      )}
+                    <BookingTools
+                      bookingId={booking.id}
+                      status={booking.status}
+                      role={portal}
+                      userId={user.id}
+                      token={token}
+                      call={call}
+                      onChange={refresh}
+                    />
+                  </article>
+                ))}
+              </section>
+            </>
+          )}
+          {portal === 'business' || portal === 'enterprise' ? (
+            <OrganisationWorkspace
+              call={call}
+              kind={portal === 'enterprise' ? 'ENTERPRISE' : 'BUSINESS'}
+            />
+          ) : null}
+          {portal === 'admin' && <AdminOperations call={call} />}
+          <SupportDesk call={call} />
+          <h2 id="notifications">Notifications</h2>
+          {notifications.length === 0 && (
+            <EmptyState title="You’re up to date">
+              Updates to your requests and bookings will appear here.
+            </EmptyState>
+          )}
+          <ul className="record-register">
+            {notifications.map((n) => (
+              <li key={n.id}>{n.event.split(':')[0].replaceAll('_', ' ')}</li>
             ))}
-          </section>
-        </>
-      )}
-      {portal === 'business' || portal === 'enterprise' ? (
-        <OrganisationWorkspace
-          call={call}
-          kind={portal === 'enterprise' ? 'ENTERPRISE' : 'BUSINESS'}
-        />
-      ) : null}
-      {portal === 'admin' && <AdminOperations call={call} />}
-      <SupportDesk call={call} />
-      <h2>Notifications</h2>
-      <ul>
-        {notifications.map((n) => (
-          <li key={n.id}>{n.event.split(':')[0].replaceAll('_', ' ')}</li>
-        ))}
-      </ul>
-    </div>
+          </ul>
+        </div>
+        <aside className="summary-rail" aria-label="Workspace summary">
+          <p className="eyebrow">At a glance</p>
+          <h2>Your workspace</h2>
+          <StatusLabel>
+            {portal === 'provider'
+              ? providerStatus || 'Not submitted'
+              : user.role}
+          </StatusLabel>
+          <p>
+            Review the latest activity with Refresh. Your permissions follow
+            your account role.
+          </p>
+          <p>
+            Service invoices record quoted amounts. Online payments are not yet
+            available.
+          </p>
+        </aside>
+      </div>
+    </WorkspaceShell>
   );
 }

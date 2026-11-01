@@ -28,3 +28,7 @@ The firewall `setup` command installs UFW through the server’s configured apt 
 MFA recovery uses existing Argon2, otplib and Prisma dependencies; no external recovery service or public reset endpoint is added.
 
 Administrator MFA enforcement is temporarily disabled by user request. Login and initial admin creation no longer require otplib; existing optional console enrollment/recovery utilities still use it. No new dependency or external service added.
+
+## CONVYN visual identity
+
+Lato web WOFF2 fonts are vendored from `@fontsource/lato` 5.3.0 and native TTF fonts from `@expo-google-fonts/lato` 0.4.1, with their SIL Open Font License files. Fonts are self-hosted; there is no external browser font request. The existing resolved Expo font package 14.0.12 is now explicitly declared for both apps. Original logo PNG bytes remain pending upload; no logo CDN or new component library is introduced. See BRAND_IMPLEMENTATION.md.

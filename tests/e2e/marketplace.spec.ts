@@ -130,7 +130,9 @@ test('customer, provider and password-only administrator complete a real booking
         .getByLabel('Completion details')
         .fill('Repair completed and tested; ready for customer inspection.');
     await job.getByRole('button', { name: 'Advance job' }).click();
-    await expect(provider.getByRole('main').getByRole('alert')).toBeEmpty();
+    await expect(
+      provider.getByRole('main').getByRole('alert', { includeHidden: true }),
+    ).toBeEmpty();
     await expect(
       provider
         .locator('article')

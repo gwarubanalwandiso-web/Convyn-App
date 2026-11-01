@@ -22,7 +22,8 @@
     "expo-constants": "~18.0.10",
     "react-dom": "19.1.0",
     "@convyn/mobile-ui": "workspace:*",
-    "expo-crypto": "~15.0.7"
+    "expo-crypto": "~15.0.7",
+    "expo-font": "~14.0.12"
   },
   "devDependencies": {
     "@types/react": "~19.1.10"

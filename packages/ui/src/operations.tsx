@@ -1,4 +1,5 @@
 'use client';
+import { StatusLabel } from './shell';
 import { useState, type FormEvent } from 'react';
 export type ApiCall = <T>(
   path: string,
@@ -299,7 +300,7 @@ export function SupportDesk({ call }: { call: ApiCall }) {
     }
   }
   return (
-    <article>
+    <article id="support">
       <h2>Help and support</h2>
       <button
         onClick={() => {
@@ -333,7 +334,8 @@ export function SupportDesk({ call }: { call: ApiCall }) {
           <ul>
             {tickets.map((ticket) => (
               <li key={ticket.id}>
-                <strong>{ticket.subject}</strong> · {ticket.status}
+                <strong>{ticket.subject}</strong> ·{' '}
+                <StatusLabel>{ticket.status}</StatusLabel>
                 <p>{ticket.response}</p>
               </li>
             ))}

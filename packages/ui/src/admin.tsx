@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { ApiCall } from './operations';
+import { MetricsStrip, StatusLabel } from './shell';
 type Ticket = {
   id: string;
   subject: string;
@@ -46,22 +47,19 @@ export function AdminOperations({ call }: { call: ApiCall }) {
     }
   }
   return (
-    <div>
+    <div id="operations">
       <h2>Operations dashboard</h2>
       <ScoringControls call={call} />
       {dashboard && (
-        <dl>
-          <dt>Customers and providers</dt>
-          <dd>{dashboard.users}</dd>
-          <dt>Provider profiles</dt>
-          <dd>{dashboard.providers}</dd>
-          <dt>Service requests</dt>
-          <dd>{dashboard.requests}</dd>
-          <dt>Open disputes</dt>
-          <dd>{dashboard.openDisputes}</dd>
-          <dt>Open support tickets</dt>
-          <dd>{dashboard.openSupportTickets}</dd>
-        </dl>
+        <MetricsStrip
+          items={[
+            { label: 'Accounts', value: dashboard.users },
+            { label: 'Providers', value: dashboard.providers },
+            { label: 'Requests', value: dashboard.requests },
+            { label: 'Open support', value: dashboard.openSupportTickets },
+            { label: 'Open disputes', value: dashboard.openDisputes },
+          ]}
+        />
       )}
       <button onClick={() => void act(refresh)}>Refresh operations</button>
       <h3>Support queue</h3>
@@ -70,7 +68,9 @@ export function AdminOperations({ call }: { call: ApiCall }) {
           <article key={ticket.id}>
             <h4>{ticket.subject}</h4>
             <p>{ticket.description}</p>
-            <p>{ticket.status}</p>
+            <p>
+              <StatusLabel>{ticket.status}</StatusLabel>
+            </p>
             {ticket.status !== 'CLOSED' && (
               <form
                 onSubmit={(e) => {
@@ -105,7 +105,9 @@ export function AdminOperations({ call }: { call: ApiCall }) {
       <section>
         {disputes.map((dispute) => (
           <article key={dispute.id}>
-            <h4>{dispute.status}</h4>
+            <p>
+              <StatusLabel>{dispute.status}</StatusLabel>
+            </p>
             <p>{dispute.reason}</p>
             <p>{dispute.resolution}</p>
             {['OPEN', 'IN_PROGRESS'].includes(dispute.status) && (

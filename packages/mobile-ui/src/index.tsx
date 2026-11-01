@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
-  Button,
+  Pressable,
+  Image,
+  type ButtonProps,
   Platform,
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
+  Text as NativeText,
   TextInput,
   View,
 } from 'react-native';
@@ -14,6 +16,8 @@ import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
 import * as Crypto from 'expo-crypto';
 import { createApiClient } from '@convyn/api-client';
+import { nativeBrandAssets } from './brand-assets';
+export { NativeTypography } from './typography';
 type User = { id: string; role: string; firstName: string };
 type Category = { id: string; name: string };
 type ServiceRequest = {
@@ -41,31 +45,135 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     paddingTop: 64,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#fff',
     gap: 16,
   },
-  heading: { fontSize: 30, fontWeight: '700', color: '#111' },
-  subheading: { fontSize: 21, fontWeight: '600', color: '#111' },
+  heading: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#000',
+    letterSpacing: -1.2,
+  },
+  subheading: { fontSize: 21, fontWeight: '700', color: '#000' },
   card: {
     padding: 16,
     gap: 12,
-    borderColor: '#ccc',
+    borderColor: '#000',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 0,
     backgroundColor: '#fff',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#777',
+    borderColor: '#000',
     padding: 12,
-    borderRadius: 6,
-    color: '#111',
+    borderRadius: 0,
+    color: '#000',
     backgroundColor: '#fff',
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  error: { color: '#a00' },
-  text: { color: '#111' },
+  field: { gap: 6 },
+  regular: { fontFamily: 'Lato400' },
+  bold: { fontFamily: 'Lato700' },
+  black: { fontFamily: 'Lato900' },
+  button: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: '#000',
+    backgroundColor: '#000',
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: { backgroundColor: '#fff' },
+  buttonDisabled: { backgroundColor: '#eee', borderColor: '#888' },
+  buttonText: { color: '#fff', fontWeight: '700', textAlign: 'center' },
+  buttonTextInverse: { color: '#000' },
+  buttonTextDisabled: { color: '#666' },
+  editorial: { padding: 24, backgroundColor: '#000', gap: 24 },
+  editorialTitle: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -1.5,
+  },
+  wordmark: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  eyebrow: { color: '#fff', fontSize: 10, letterSpacing: 2, fontWeight: '900' },
+  logo: { width: 220, height: 110, resizeMode: 'contain' },
+  compactLogo: { width: 150, height: 75, resizeMode: 'contain' },
+  tabs: { gap: 1, borderBottomWidth: 1, borderColor: '#000' },
+
+  error: { color: '#000' },
+  text: { color: '#000' },
 });
+function Text(props: ComponentProps<typeof NativeText>) {
+  const weight = StyleSheet.flatten(props.style)?.fontWeight;
+  const font =
+    weight === '900'
+      ? styles.black
+      : weight === '700' || weight === 'bold'
+        ? styles.bold
+        : styles.regular;
+  return <NativeText {...props} style={[styles.text, props.style, font]} />;
+}
+function Button({ title, onPress, disabled, accessibilityLabel }: ButtonProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
+      ]}
+    >
+      {({ pressed }) => (
+        <Text
+          style={[
+            styles.buttonText,
+            pressed && styles.buttonTextInverse,
+            disabled && styles.buttonTextDisabled,
+          ]}
+        >
+          {title}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+function NativeBrandPanel({
+  role,
+  compact = false,
+}: {
+  role: string;
+  compact?: boolean;
+}) {
+  return (
+    <View style={styles.editorial}>
+      {nativeBrandAssets.solid ? (
+        <Image
+          source={nativeBrandAssets.solid}
+          style={compact ? styles.compactLogo : styles.logo}
+          accessibilityLabel="CONVYN"
+        />
+      ) : (
+        <Text style={styles.wordmark}>CONVYN</Text>
+      )}
+      <Text style={styles.eyebrow}>{role} / SOUTH AFRICA</Text>
+      {!compact && (
+        <Text style={styles.editorialTitle}>YOUR WORLD.{'\n'}ON DEMAND.</Text>
+      )}
+    </View>
+  );
+}
 function Input({
   label,
   value,
@@ -80,9 +188,10 @@ function Input({
   multiline?: boolean;
 }) {
   return (
-    <View style={{ gap: 6 }}>
+    <View style={styles.field}>
       <Text style={styles.text}>{label}</Text>
       <TextInput
+        selectionColor="#000"
         accessibilityLabel={label}
         value={value}
         onChangeText={onChange}
@@ -224,6 +333,7 @@ export function NativeMarketplace({ role }: { role: 'CUSTOMER' | 'PROVIDER' }) {
   if (!user)
     return (
       <ScrollView contentContainerStyle={styles.page}>
+        <NativeBrandPanel role={role} />
         <Text accessibilityRole="header" style={styles.heading}>
           CONVYN {role === 'CUSTOMER' ? 'Customer' : 'Provider'}
         </Text>
@@ -254,6 +364,8 @@ export function NativeMarketplace({ role }: { role: 'CUSTOMER' | 'PROVIDER' }) {
             />
             <Text>I consent to account data processing</Text>
             <Switch
+              trackColor={{ false: '#ddd', true: '#000' }}
+              thumbColor="#fff"
               accessibilityLabel="Consent to data processing"
               value={consent}
               onValueChange={setConsent}
@@ -269,7 +381,7 @@ export function NativeMarketplace({ role }: { role: 'CUSTOMER' | 'PROVIDER' }) {
           title={register ? 'Use existing account' : 'Register'}
           onPress={() => setRegister(!register)}
         />
-        {busy && <ActivityIndicator />}
+        {busy && <ActivityIndicator color="#000" />}
         <Text accessibilityRole="alert" style={styles.error}>
           {error}
         </Text>
@@ -277,20 +389,43 @@ export function NativeMarketplace({ role }: { role: 'CUSTOMER' | 'PROVIDER' }) {
     );
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      <NativeBrandPanel role={role} compact />
       <Text accessibilityRole="header" style={styles.heading}>
         Welcome, {user.firstName}
       </Text>
-      <View style={styles.row}>
+      <ScrollView
+        horizontal
+        contentContainerStyle={styles.tabs}
+        accessibilityLabel="Workspace navigation"
+      >
         {['Home', 'Bookings', 'Messages', 'Support', 'Profile'].map((name) => (
-          <Button key={name} title={name} onPress={() => setTab(name)} />
+          <Pressable
+            key={name}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === name }}
+            onPress={() => setTab(name)}
+            style={
+              tab === name
+                ? styles.button
+                : [styles.button, styles.buttonPressed]
+            }
+          >
+            <Text
+              style={
+                tab === name ? styles.buttonText : styles.buttonTextInverse
+              }
+            >
+              {name}
+            </Text>
+          </Pressable>
         ))}
-      </View>
+      </ScrollView>
       <Button
         title="Refresh"
         disabled={busy}
         onPress={() => void act(refresh)}
       />
-      {busy && <ActivityIndicator />}
+      {busy && <ActivityIndicator color="#000" />}
       <Text accessibilityRole="alert" style={styles.error}>
         {error}
       </Text>

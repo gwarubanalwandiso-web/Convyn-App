@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { ApiCall } from './operations';
+import { MetricsStrip, StatusLabel } from './shell';
+import { EmptyState } from './empty-state';
+import { RecordTable } from './record-table';
 type Organisation = {
   id: string;
   name: string;
@@ -104,7 +107,7 @@ export function OrganisationWorkspace({
       .catch((e) => setError(e.message));
   }, [call]);
   return (
-    <div>
+    <div id="organisation">
       <h2>
         {kind === 'ENTERPRISE'
           ? 'Enterprise operations'
@@ -147,9 +150,34 @@ export function OrganisationWorkspace({
           ))}
         </select>
       </label>
+      {!detail && (
+        <div className="organisation-empty">
+          <EmptyState title="Choose your organisation">
+            Create an organisation or select one you belong to. Your team,
+            procurement and service commitments will appear below.
+          </EmptyState>
+          <p id="team">Team and locations require a selected organisation.</p>
+          <p id="procurement">
+            Select an organisation to view procurement requests.
+          </p>
+          <p id="budgets">Select an organisation to view cost centres.</p>
+          <p id="reports">Select an organisation to view reports.</p>
+          <p id="contracts">
+            Select an organisation to view contracts and SLA targets.
+          </p>
+        </div>
+      )}
       {detail && (
         <>
           <h2>{detail.name}</h2>
+          <MetricsStrip
+            items={[
+              { label: 'Team members', value: detail.members.length },
+              { label: 'Service locations', value: detail.locations.length },
+              { label: 'Cost centres', value: detail.costCentres.length },
+              { label: 'Requests', value: requests.length },
+            ]}
+          />
           <p>
             Your role: {role} · Request spending limit:{' '}
             {detail.spendingLimitMinor} ZAR cents
@@ -225,8 +253,8 @@ export function OrganisationWorkspace({
               />
             </section>
           )}
-          <h3>Employees</h3>
-          <ul>
+          <h3 id="team">Employees</h3>
+          <ul className="record-register">
             {detail.members.map((m) => (
               <li key={m.user.id}>
                 {m.user.email} · {m.role}
@@ -234,19 +262,39 @@ export function OrganisationWorkspace({
             ))}
           </ul>
           <h3>Departments</h3>
-          <ul>
+          <ul className="record-register">
             {detail.departments.map((d) => (
               <li key={d.id}>{d.name}</li>
             ))}
           </ul>
           <h3>Service locations</h3>
-          <ul>
+          <ul className="record-register">
             {detail.locations.map((l) => (
               <li key={l.id}>
                 {l.name} · {l.address}
               </li>
             ))}
           </ul>
+          <h3 id="budgets">Cost centres</h3>
+          <RecordTable
+            caption="Organisation cost centre register"
+            headings={['Code', 'Cost centre']}
+          >
+            {detail.costCentres.map((centre) => (
+              <tr key={centre.id}>
+                <td>{centre.code}</td>
+                <td>{centre.name}</td>
+              </tr>
+            ))}
+            {detail.costCentres.length === 0 && (
+              <tr>
+                <td colSpan={2}>
+                  No cost centres yet. An organisation owner or administrator
+                  can add one.
+                </td>
+              </tr>
+            )}
+          </RecordTable>
           {detail.locations.length > 0 && detail.costCentres.length > 0 && (
             <article>
               <h3>Create procurement request</h3>
@@ -310,14 +358,15 @@ export function OrganisationWorkspace({
               </form>
             </article>
           )}
-          <h3>Procurement requests</h3>
+          <h3 id="procurement">Procurement requests</h3>
           <section>
             {requests.map((request) => (
               <article key={request.id}>
                 <h4>{request.description}</h4>
                 <p>
-                  {request.approval.purchaseOrder} · {request.approval.status} ·
-                  Budget {request.approval.budgetMinor} cents
+                  {request.approval.purchaseOrder} ·{' '}
+                  <StatusLabel>{request.approval.status}</StatusLabel> · Budget{' '}
+                  {request.approval.budgetMinor} cents
                 </p>
                 {approve &&
                   request.approval.status === 'PENDING' &&
@@ -383,8 +432,8 @@ export function OrganisationWorkspace({
               }
             />
           )}
-          <h3>Contracts and SLA targets</h3>
-          <ul>
+          <h3 id="contracts">Contracts and SLA targets</h3>
+          <ul className="record-register">
             {detail.contracts.map((c) => (
               <li key={c.id}>
                 {c.name} · Response target {c.responseMinutes} minutes
@@ -392,31 +441,37 @@ export function OrganisationWorkspace({
               </li>
             ))}
           </ul>
-          {approve && (
-            <>
-              <button
-                onClick={() =>
-                  void act(async () => {
-                    setReport(
-                      await call('organisations/' + selected + '/report'),
-                    );
-                  })
-                }
-              >
-                Load organisation report
-              </button>
-              {report && (
-                <dl>
-                  <dt>Requests</dt>
-                  <dd>{report.requestCount}</dd>
-                  <dt>Approved budget (cents)</dt>
-                  <dd>{report.approvedBudgetMinor}</dd>
-                  <dt>Issued, unpaid invoices (cents)</dt>
-                  <dd>{report.invoicedMinor}</dd>
-                </dl>
-              )}
-            </>
-          )}
+          <section id="reports" aria-label="Organisation reports">
+            <h3>Reports</h3>
+            {!approve && (
+              <p>Your organisation role does not grant report access.</p>
+            )}
+            {approve && (
+              <>
+                <button
+                  onClick={() =>
+                    void act(async () => {
+                      setReport(
+                        await call('organisations/' + selected + '/report'),
+                      );
+                    })
+                  }
+                >
+                  Load organisation report
+                </button>
+                {report && (
+                  <dl>
+                    <dt>Requests</dt>
+                    <dd>{report.requestCount}</dd>
+                    <dt>Approved budget (cents)</dt>
+                    <dd>{report.approvedBudgetMinor}</dd>
+                    <dt>Issued, unpaid invoices (cents)</dt>
+                    <dd>{report.invoicedMinor}</dd>
+                  </dl>
+                )}
+              </>
+            )}
+          </section>
         </>
       )}
       <p role="alert">{error}</p>

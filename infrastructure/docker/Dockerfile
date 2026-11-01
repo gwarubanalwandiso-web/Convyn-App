@@ -42,6 +42,7 @@ ARG WEB_APP=customer-web
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 WEB_APP=${WEB_APP}
 COPY --from=build --chown=node:node /app/apps/${WEB_APP}/.next/standalone/ ./
 COPY --from=build --chown=node:node /app/apps/${WEB_APP}/.next/static/ ./apps/${WEB_APP}/.next/static/
+COPY --from=build --chown=node:node /app/apps/${WEB_APP}/public/ ./apps/${WEB_APP}/public/
 COPY --chown=node:node infrastructure/docker/start-web.mjs ./start-web.mjs
 USER node
 EXPOSE 3000
