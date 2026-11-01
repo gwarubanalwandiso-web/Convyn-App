@@ -2,7 +2,7 @@
 
 This guide deploys the **implemented staging marketplace**. It does not make payments, external identity verification, notifications, native distribution, or the outstanding production/security work operational. Use synthetic staging data until `PRODUCTION_READINESS.md` is addressed.
 
-No target server was supplied to the agent. The package is tested in an isolated Docker deployment in the cloud workspace; installing packages, DNS, public certificates and firewall changes on your actual server require its address/access and must be verified there.
+The package is tested in an isolated Docker deployment in the cloud workspace. Remote deployment remains blocked by the managed environment’s SSH network access; host installation, public certificates and firewall changes have not been verified on the supplied server.
 
 ## 1. Server and access requirements
 
@@ -84,6 +84,23 @@ Only create AAAA records if IPv6 is configured and reachable. Remove stale/unrea
 Inspect existing listeners with `sudo ss -lntp`; do not stop another application's web server blindly. If ports 80/443 are already used, integrate the existing proxy or choose a separate server.
 
 In your hosting-provider firewall, preserve the actual SSH port from your administration IP and allow inbound TCP 80/443. Do not expose 5432, 6379, 3000–3004 or 4000. Docker-published ports are not reliably restricted by simple UFW rules; publishing only the edge is intentional. If you use a host firewall, establish the correct SSH allow rule and recovery-console access before enabling it.
+
+The host firewall helper previews commands unless `--apply` is supplied. From the server, with provider recovery-console access available:
+
+```sh
+sudo apt-get install -y ufw
+# Replace 22 with the real SSH port. Preview first.
+bash infrastructure/deployment/firewall.sh web --ssh-port 22
+sudo bash infrastructure/deployment/firewall.sh web --ssh-port 22 --apply
+sudo bash infrastructure/deployment/firewall.sh enable --ssh-port 22 --apply
+sudo bash infrastructure/deployment/firewall.sh status --apply
+# Examples for additional host ports:
+sudo bash infrastructure/deployment/firewall.sh allow 8080 8443 --ssh-port 22 --apply
+sudo bash infrastructure/deployment/firewall.sh deny 8080 --ssh-port 22 --apply
+sudo bash infrastructure/deployment/firewall.sh allow 51820 --protocol udp --ssh-port 22 --apply
+```
+
+`allow` and `deny` insert priority rules ahead of existing rules; review existing policy before applying. The script refuses a TCP deny for the protected SSH port, preserves existing rules/defaults, and allows that SSH port from any source to retain access. It does not discover every configured SSH listener. When run over SSH it detects the connection’s server port; explicitly specify it when running through sudo or a console. Verify a second SSH login after enabling the firewall. Enabling UFW preserves existing default policies, so inspect `status` to confirm whether unmatched incoming traffic is denied. This helper is for host traffic: to deny a Docker-published service, remove its port publication or restrict its bind address and update the provider firewall. It cannot change this cloud environment’s outbound network policy. No authenticated web firewall control panel is exposed.
 
 Keep `EDGE_BIND=127.0.0.1` while preparing the database and administrator. Validate requirements now:
 

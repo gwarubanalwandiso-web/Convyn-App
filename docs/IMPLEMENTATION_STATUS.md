@@ -45,3 +45,7 @@ Three additive migrations preserve prior history and data. New database constrai
 ## Server deployment package
 
 Container API/standalone web images, Caddy HTTPS routing, private PostGIS/Redis networks, a restricted runtime database role, migration/reference-data tooling, host installation/preflight scripts, backup/restore checks and rollback image selection are provided. The isolated deployment passed 34 certificate-verified HTTPS assertions and a three-migration restore test. See SERVER_DEPLOYMENT.md and DEPLOYMENT_VALIDATION.md for steps, cached-artifact download-outage limits and required server access. Requested defaults: customer site www.convyn.cloud and administrator admin@convyn.cloud. No remote server or default administrator password has been installed.
+
+## Host firewall helper
+
+Added preview-first UFW allow/deny/web/enable/status commands with validated ports and SSH deny protection. Verified argument rejection, command ordering with a mocked UFW, and Bash syntax; no live firewall or remote changes applied. Docker and provider firewall limitations are documented in SERVER_DEPLOYMENT.md.

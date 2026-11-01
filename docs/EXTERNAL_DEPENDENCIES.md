@@ -18,3 +18,7 @@
 | Commercial launch         | Security, POPIA, licensing, payments and operations review        | Outstanding                                                                                 |
 
 Never record credential values in this register or source control.
+
+## Host firewall management
+
+Optional Ubuntu `ufw` package, installed through signed OS repositories on the server. `infrastructure/deployment/firewall.sh` uses its CLI without adding a network service. Docker-published ports and hosting-provider firewall rules require separate management. No new npm dependency.
