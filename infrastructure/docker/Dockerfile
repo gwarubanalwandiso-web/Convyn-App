@@ -52,7 +52,7 @@ CMD ["node", "start-web.mjs"]
 FROM base AS tools
 # Batch-only tooling image; not an externally exposed server.
 COPY --from=build --chown=node:node /app/ ./
-COPY --chown=node:node scripts/migrate.mjs scripts/seed-categories.mjs scripts/create-admin.mjs scripts/provision-runtime-role.mjs ./scripts/
+COPY --chown=node:node scripts/migrate.mjs scripts/seed-categories.mjs scripts/create-admin.mjs scripts/reset-admin-mfa.mjs scripts/provision-runtime-role.mjs ./scripts/
 ENV NODE_ENV=production
 USER node
 CMD ["node", "scripts/migrate.mjs"]

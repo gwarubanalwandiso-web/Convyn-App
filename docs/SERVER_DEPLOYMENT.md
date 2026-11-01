@@ -197,3 +197,25 @@ The isolated workspace test covers image builds, non-root API/web runtime, priva
 ## Administrator credential handling
 
 The intended administrator login is `admin@convyn.cloud`. No default password is embedded in source, images or this document. The supplied chat password does not meet the current administrator CLI's 16-character minimum and has not been installed. Set a replacement `ADMIN_PASSWORD` of at least 16 characters and an enrolled `ADMIN_MFA_SECRET` through secure configuration before provisioning. Do not reuse a password posted in chat for a public deployment.
+
+## Lost administrator authenticator key
+
+Recovery requires private server-console access and the current administrator password. It does not disable MFA. Update the checkout, generate a replacement base32 key privately, enroll it in your authenticator, then provide its current six-digit code. Use `scripts/reset-admin-mfa.mjs` rather than account creation for existing accounts. The script checks the password, administrator role and new code, then atomically replaces the key and revokes sessions. Do not share keys, passwords or codes.
+
+```sh
+cd /opt/convyn
+git pull --ff-only
+export ADMIN_EMAIL=admin@convyn.cloud
+ADMIN_MFA_SECRET=$(openssl rand 20 | base32 | tr -d '=\n')
+printf '%s\n' "$ADMIN_MFA_SECRET"
+# Enroll this key on your phone before continuing.
+read -r -s -p 'Current administrator password: ' ADMIN_PASSWORD
+printf '\n'
+read -r -s -p 'Code from NEW authenticator: ' ADMIN_MFA_CODE
+printf '\n'
+export ADMIN_PASSWORD ADMIN_MFA_SECRET ADMIN_MFA_CODE
+docker compose --env-file infrastructure/deployment/.env -f infrastructure/deployment/compose.yml --profile tools run --rm --no-deps -T --env ADMIN_EMAIL --env ADMIN_PASSWORD --env ADMIN_MFA_SECRET --env ADMIN_MFA_CODE tools node --input-type=module < scripts/reset-admin-mfa.mjs
+unset ADMIN_EMAIL ADMIN_PASSWORD ADMIN_MFA_SECRET ADMIN_MFA_CODE
+```
+
+The stdin invocation uses the updated checkout script with existing tooling images; no image rebuild is needed. Ensure PostgreSQL is healthy first. After success, the old authenticator key no longer works. If the new code is rejected, check phone/server clock synchronization and retry with a fresh code.

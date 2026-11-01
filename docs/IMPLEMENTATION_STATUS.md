@@ -51,3 +51,5 @@ Container API/standalone web images, Caddy HTTPS routing, private PostGIS/Redis 
 Added preview-first UFW allow/deny/web/enable/status commands with validated ports and SSH deny protection. Verified argument rejection, command ordering with a mocked UFW, and Bash syntax; no live firewall or remote changes applied. Docker and provider firewall limitations are documented in SERVER_DEPLOYMENT.md.
 
 Added `firewall.sh setup` for automatic apt-based UFW installation, SSH/80/443 rules, deny-incoming/allow-outgoing defaults and activation. Tested with mocked commands; actual remote firewall remains unverified.
+
+Added console-only administrator MFA recovery requiring the current password and a valid code from the replacement key; replacement and session revocation are atomic. Syntax and mocked rejection/success checks passed; remote recovery has not been executed.
