@@ -9,6 +9,7 @@ import { APP_GUARD, NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { Database } from './database';
+import type { Express } from 'express';
 import { AuthController, SessionGuard } from './auth';
 import { MarketplaceController } from './marketplace';
 import { OperationsController } from './operations';
@@ -54,6 +55,10 @@ export async function createApp() {
     logger: ['error', 'warn', 'log'],
   });
   app.enableShutdownHooks();
+  if (process.env.TRUST_PROXY === '1') {
+    const server: Express = app.getHttpAdapter().getInstance();
+    server.set('trust proxy', 1);
+  }
   app.useGlobalFilters(new DatabaseErrorFilter());
   app.enableCors({
     origin: (

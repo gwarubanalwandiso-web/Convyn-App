@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
+backup_dir=${CONVYN_BACKUP_DIR:-"$repo_dir/infrastructure/deployment/.runtime/backups"}
+umask 077
+mkdir -p -- "$backup_dir"
+backup_file="$backup_dir/convyn-$(date -u +%Y%m%dT%H%M%SZ)-$(openssl rand -hex 4).dump"
+partial="$backup_file.partial"
+trap 'rm -f -- "$partial"' EXIT
+"${compose[@]}" exec -T postgres pg_dump -U convyn -d convyn --format=custom > "$partial"
+test -s "$partial"
+mv -- "$partial" "$backup_file"
+(cd -- "$backup_dir" && sha256sum -- "$(basename -- "$backup_file")") > "$backup_file.sha256"
+printf 'Backup saved: %s\n' "$backup_file"

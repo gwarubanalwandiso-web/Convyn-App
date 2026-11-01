@@ -1,0 +1,16 @@
+{
+  'services':
+    {
+      'api': { 'build': { 'secrets': ['proxy_ca'] } },
+      'tools': { 'build': { 'secrets': ['proxy_ca'] } },
+      'customer': { 'build': { 'secrets': ['proxy_ca'] } },
+      'provider': { 'build': { 'secrets': ['proxy_ca'] } },
+      'admin': { 'build': { 'secrets': ['proxy_ca'] } },
+      'business': { 'build': { 'secrets': ['proxy_ca'] } },
+      'enterprise': { 'build': { 'secrets': ['proxy_ca'] } },
+    },
+  'secrets':
+    {
+      'proxy_ca': { 'file': '${CODEX_PROXY_CERT:?Proxy CA path is required}' },
+    },
+}

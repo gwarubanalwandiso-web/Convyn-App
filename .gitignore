@@ -10,3 +10,6 @@ coverage/
 
 test-results/
 playwright-report/
+
+**/.runtime/
+**/backups/

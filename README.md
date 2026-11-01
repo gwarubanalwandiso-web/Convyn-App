@@ -50,3 +50,7 @@ See docs/IMPLEMENTATION_STATUS.md for scope and continuation.
 ## Operational additions
 
 Booking tools provide conversations, support/disputes, cancellation, consent-controlled short-lived GPS observations and downloadable unpaid PDF service invoices. Provider recommendations are advisory weighted scores with versioned, audited feature snapshots. Admins can adjust weights; missing history is disclosed, and no score selects or pays a provider. See docs/FEATURE_COVERAGE.md for the exact remaining scope.
+
+## Server deployment
+
+Follow [the server installation and deployment guide](docs/SERVER_DEPLOYMENT.md). It includes Ubuntu host requirements, private environment generation, Docker images, all five portal domains, automatic TLS configuration, migrations, health checks, administrator provisioning, backups and isolated restore tests. The implementation remains a staging application; server access, public DNS/certificates and production acceptance must be verified separately.

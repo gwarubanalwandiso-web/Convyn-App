@@ -41,3 +41,7 @@ System Chromium runs Playwright successfully. Downloading Playwright's bundled C
 ## Expansion milestone
 
 Three additive migrations preserve prior history and data. New database constraints cover monetary/coordinate values and cross-organisation procurement consistency. Message submission is idempotent; tracking writes lock booking state against concurrent cancellation/revocation. Expired GPS records are purged every minute. Invoices remain UNPAID and dispute decisions never imply a refund. See FEATURE_COVERAGE.md for explicit remaining scope.
+
+## Server deployment package
+
+Container API/standalone web images, Caddy HTTPS routing, private PostGIS/Redis networks, a restricted runtime database role, migration/reference-data tooling, host installation/preflight scripts, backup/restore checks and rollback image selection are provided. The isolated deployment passed 34 certificate-verified HTTPS assertions and a three-migration restore test. See SERVER_DEPLOYMENT.md and DEPLOYMENT_VALIDATION.md for steps, cached-artifact download-outage limits and required server access. Requested defaults: customer site www.convyn.cloud and administrator admin@convyn.cloud. No remote server or default administrator password has been installed.

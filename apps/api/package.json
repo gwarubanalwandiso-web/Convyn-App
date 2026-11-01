@@ -27,5 +27,8 @@
   "devDependencies": {
     "@types/express": "5.0.5",
     "@types/pdfkit": "0.17.3"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

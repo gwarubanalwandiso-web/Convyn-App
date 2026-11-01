@@ -1,0 +1,12 @@
+services:
+  api:
+    environment:
+      WEB_ORIGINS: https://customer.localhost:18443,https://provider.localhost:18443,https://admin.localhost:18443,https://business.localhost:18443,https://enterprise.localhost:18443
+  edge:
+    ports: !override ['127.0.0.1:18443:443']
+    volumes:
+      !override [
+        './Caddyfile.local-test:/etc/caddy/Caddyfile:ro',
+        'caddy_data:/data',
+        'caddy_config:/config',
+      ]

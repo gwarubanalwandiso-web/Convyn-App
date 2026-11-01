@@ -1,0 +1,49 @@
+{
+	admin off
+	auto_https disable_redirects
+}
+(security) {
+	header X-Content-Type-Options nosniff
+	@api path /v1/*
+	handle @api {
+		reverse_proxy api:4000
+	}
+}
+http://:8080 {
+	respond /healthz "ok" 200
+}
+customer.localhost {
+	tls internal
+	import security
+	handle {
+		reverse_proxy customer:3000
+	}
+}
+provider.localhost {
+	tls internal
+	import security
+	handle {
+		reverse_proxy provider:3000
+	}
+}
+admin.localhost {
+	tls internal
+	import security
+	handle {
+		reverse_proxy admin:3000
+	}
+}
+business.localhost {
+	tls internal
+	import security
+	handle {
+		reverse_proxy business:3000
+	}
+}
+enterprise.localhost {
+	tls internal
+	import security
+	handle {
+		reverse_proxy enterprise:3000
+	}
+}
