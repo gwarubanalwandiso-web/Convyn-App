@@ -126,7 +126,11 @@ try {
       mfaSecret,
     },
   });
-  await request('/auth/login', { body: { email: admin.email, password } }, 401);
+  await request(
+    '/auth/login',
+    { body: { email: admin.email, password: 'incorrect-password' } },
+    401,
+  );
   const a = (
     await request(
       '/auth/login',
@@ -134,12 +138,14 @@ try {
         body: {
           email: admin.email,
           password,
-          code: authenticator.generate(mfaSecret),
         },
       },
       201,
     )
   ).value.accessToken;
+  // Password-only login must work for both previously enrolled and new admins.
+  await db.user.update({ where: { id: admin.id }, data: { mfaSecret: null } });
+  await request('/auth/login', { body: { email: admin.email, password } }, 201);
   const category = await db.category.upsert({
     where: { name: 'Plumbing' },
     create: { name: 'Plumbing' },

@@ -3,14 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from '@node-rs/argon2';
-import { authenticator } from 'otplib';
 const dbUrl = new URL(process.env.DATABASE_URL!);
 dbUrl.pathname = '/convyn_test';
 const db = new PrismaClient({
   adapter: new PrismaPg({ connectionString: dbUrl.toString() }),
 });
 test.afterAll(() => db.$disconnect());
-test('customer, provider and MFA administrator complete a real booking through the portals', async ({
+test('customer, provider and password-only administrator complete a real booking through the portals', async ({
   browser,
 }) => {
   const suffix = randomUUID(),
@@ -53,7 +52,6 @@ test('customer, provider and MFA administrator complete a real booking through t
   await expect(
     qualification.getByText('Status: SUBMITTED', { exact: true }),
   ).toBeVisible();
-  const mfaSecret = authenticator.generateSecret();
   await db.user.create({
     data: {
       email: `admin-${suffix}@example.invalid`,
@@ -63,7 +61,6 @@ test('customer, provider and MFA administrator complete a real booking through t
       mobile: '+27821234567',
       consentAt: new Date(),
       role: 'ADMIN',
-      mfaSecret,
     },
   });
   await admin.goto('http://localhost:3002');
@@ -71,9 +68,7 @@ test('customer, provider and MFA administrator complete a real booking through t
     .getByLabel('Email', { exact: true })
     .fill(`admin-${suffix}@example.invalid`);
   await admin.getByLabel('Password', { exact: true }).fill(password);
-  await admin
-    .getByLabel('Authenticator code')
-    .fill(authenticator.generate(mfaSecret));
+  await expect(admin.getByLabel('Authenticator code')).toHaveCount(0);
   await admin.getByRole('button', { name: 'Sign in', exact: true }).click();
   const verification = admin.locator('article').filter({
     has: admin.getByRole('heading', { name: `provider ${suffix}` }),

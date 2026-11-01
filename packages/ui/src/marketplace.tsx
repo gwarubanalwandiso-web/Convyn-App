@@ -148,7 +148,6 @@ export function Marketplace({
           : {
               email: data.email,
               password: data.password,
-              ...(data.code ? { code: data.code } : {}),
             },
       );
       if (
@@ -184,17 +183,6 @@ export function Marketplace({
                 required
               />
             </label>
-            {portal === 'admin' && (
-              <label>
-                Authenticator code
-                <input
-                  name="code"
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  required
-                />
-              </label>
-            )}
             <button disabled={busy}>Sign in</button>
           </form>
         </article>

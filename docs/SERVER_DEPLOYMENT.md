@@ -129,20 +129,18 @@ On this managed cloud worker, the deployment script automatically adds the proxy
 
 ## 7. Bootstrap an administrator before public exposure
 
-Create/enrol a 32+ character base32 TOTP secret using your secure password-manager/authenticator workflow. In your private SSH terminal, read credentials without putting them into command history:
+Administrator login currently uses email and password only; MFA enforcement is temporarily disabled. In your private SSH terminal, read credentials without putting them into command history:
 
 ```sh
 read -r -p 'Administrator email: ' ADMIN_EMAIL
 read -r -s -p 'Administrator password (16+ characters): ' ADMIN_PASSWORD
 printf '\n'
-read -r -s -p 'Enrolled base32 TOTP secret: ' ADMIN_MFA_SECRET
-printf '\n'
-export ADMIN_EMAIL ADMIN_PASSWORD ADMIN_MFA_SECRET
-docker compose --env-file infrastructure/deployment/.env -f infrastructure/deployment/compose.yml --profile tools run --rm --no-deps --env ADMIN_EMAIL --env ADMIN_PASSWORD --env ADMIN_MFA_SECRET tools node scripts/create-admin.mjs
-unset ADMIN_EMAIL ADMIN_PASSWORD ADMIN_MFA_SECRET
+export ADMIN_EMAIL ADMIN_PASSWORD
+docker compose --env-file infrastructure/deployment/.env -f infrastructure/deployment/compose.yml --profile tools run --rm --no-deps --env ADMIN_EMAIL --env ADMIN_PASSWORD tools node scripts/create-admin.mjs
+unset ADMIN_EMAIL ADMIN_PASSWORD
 ```
 
-Sign in at the admin domain using the password and current authenticator code. The command creates one administrator and does not print credentials. Production MFA-secret envelope encryption and replay hardening remain outstanding; do not treat this staging setup as final security approval.
+Sign in at the admin domain using email and password. The command creates one administrator and does not print credentials. Existing saved MFA keys are retained but are not checked during login. Do not treat this staging setup as final security approval.
 
 ## 8. Publish staging, then verify HTTPS and installed requirements
 
@@ -192,30 +190,12 @@ Rollback requires local API/web images for that tag and never downgrades or dest
 
 ## Verification boundaries
 
-The isolated workspace test covers image builds, non-root API/web runtime, private backend ports, custom-CA-verified HTTPS routing, secure cookies, MFA, the marketplace journey, health checks, migrations and backup restoration. It does not establish remote server reachability, public DNS/ACME issuance, the Ubuntu host installation on your server, production data recovery, mobile distribution, or third-party payment/notification behaviour. Record those results only after performing the corresponding operations on the supplied server.
+The isolated workspace test covers image builds, non-root API/web runtime, private backend ports, custom-CA-verified HTTPS routing, secure cookies, the then-enabled MFA flow, the marketplace journey, health checks, migrations and backup restoration. It does not establish remote server reachability, public DNS/ACME issuance, the Ubuntu host installation on your server, production data recovery, mobile distribution, or third-party payment/notification behaviour. Record those results only after performing the corresponding operations on the supplied server.
 
 ## Administrator credential handling
 
-The intended administrator login is `admin@convyn.cloud`. No default password is embedded in source, images or this document. The supplied chat password does not meet the current administrator CLI's 16-character minimum and has not been installed. Set a replacement `ADMIN_PASSWORD` of at least 16 characters and an enrolled `ADMIN_MFA_SECRET` through secure configuration before provisioning. Do not reuse a password posted in chat for a public deployment.
+The intended administrator login is `admin@convyn.cloud`. No default password is embedded in source, images or this document. The supplied chat password does not meet the current administrator CLI's 16-character minimum and has not been installed. Set a replacement `ADMIN_PASSWORD` of at least 16 characters through secure configuration before provisioning. Do not reuse a password posted in chat for a public deployment.
 
-## Lost administrator authenticator key
+## Temporarily disabled administrator MFA
 
-Recovery requires private server-console access and the current administrator password. It does not disable MFA. Update the checkout, generate a replacement base32 key privately, enroll it in your authenticator, then provide its current six-digit code. Use `scripts/reset-admin-mfa.mjs` rather than account creation for existing accounts. The script checks the password, administrator role and new code, then atomically replaces the key and revokes sessions. Do not share keys, passwords or codes.
-
-```sh
-cd /opt/convyn
-git pull --ff-only
-export ADMIN_EMAIL=admin@convyn.cloud
-ADMIN_MFA_SECRET=$(openssl rand 20 | base32 | tr -d '=\n')
-printf '%s\n' "$ADMIN_MFA_SECRET"
-# Enroll this key on your phone before continuing.
-read -r -s -p 'Current administrator password: ' ADMIN_PASSWORD
-printf '\n'
-read -r -s -p 'Code from NEW authenticator: ' ADMIN_MFA_CODE
-printf '\n'
-export ADMIN_PASSWORD ADMIN_MFA_SECRET ADMIN_MFA_CODE
-docker compose --env-file infrastructure/deployment/.env -f infrastructure/deployment/compose.yml --profile tools run --rm --no-deps -T --env ADMIN_EMAIL --env ADMIN_PASSWORD --env ADMIN_MFA_SECRET --env ADMIN_MFA_CODE tools node --input-type=module < scripts/reset-admin-mfa.mjs
-unset ADMIN_EMAIL ADMIN_PASSWORD ADMIN_MFA_SECRET ADMIN_MFA_CODE
-```
-
-The stdin invocation uses the updated checkout script with existing tooling images; no image rebuild is needed. Ensure PostgreSQL is healthy first. After success, the old authenticator key no longer works. If the new code is rejected, check phone/server clock synchronization and retry with a fresh code.
+Administrator sign-in no longer requires an authenticator code, including accounts with previously enrolled keys. No schema migration or key deletion is needed. Rebuild/redeploy the API and web images to apply this change; changing environment variables alone does not update running code. The old MFA recovery utility only changes stored enrollment; it does not enable enforcement. Incorrect passwords still require password recovery via the private VPS console.

@@ -26,3 +26,5 @@ Optional Ubuntu `ufw` package, installed through signed OS repositories on the s
 The firewall `setup` command installs UFW through the server’s configured apt repositories if missing. It requires root, network access to those repositories and provider-console recovery access before activation; it does not configure the provider firewall.
 
 MFA recovery uses existing Argon2, otplib and Prisma dependencies; no external recovery service or public reset endpoint is added.
+
+Administrator MFA enforcement is temporarily disabled by user request. Login and initial admin creation no longer require otplib; existing optional console enrollment/recovery utilities still use it. No new dependency or external service added.

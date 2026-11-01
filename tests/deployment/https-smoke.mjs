@@ -4,7 +4,6 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { authenticator } from 'otplib';
 const envFile = resolve(
   process.env.CONVYN_DEPLOY_ENV ??
     'infrastructure/deployment/.runtime/test.env',
@@ -131,8 +130,7 @@ try {
   assert.match(customer.headers, /SameSite=Strict/i);
   const c = customer.value.accessToken,
     p = provider.value.accessToken;
-  const mfaSecret = authenticator.generateSecret(20),
-    adminEmail = `container-admin-${suffix}@example.invalid`;
+  const adminEmail = `container-admin-${suffix}@example.invalid`;
   const provision = spawnSync(
     'docker',
     [
@@ -146,8 +144,6 @@ try {
       'ADMIN_EMAIL',
       '-e',
       'ADMIN_PASSWORD',
-      '-e',
-      'ADMIN_MFA_SECRET',
       'tools',
       'node',
       'scripts/create-admin.mjs',
@@ -157,7 +153,6 @@ try {
         ...process.env,
         ADMIN_EMAIL: adminEmail,
         ADMIN_PASSWORD: password,
-        ADMIN_MFA_SECRET: mfaSecret,
       },
       encoding: 'utf8',
     },
@@ -174,7 +169,6 @@ try {
       body: {
         email: adminEmail,
         password,
-        code: authenticator.generate(mfaSecret),
       },
     },
     201,
@@ -336,7 +330,7 @@ try {
   );
   request('customer', '/v1/bookings', {}, 401);
   console.log(
-    `PASS: ${checks} certificate-verified HTTPS assertions, all five portals, secure cookies, MFA and complete container marketplace journey`,
+    `PASS: ${checks} certificate-verified HTTPS assertions, all five portals, secure cookies, password-only admin login and complete container marketplace journey`,
   );
 } finally {
   rmSync(temporary, { recursive: true, force: true });

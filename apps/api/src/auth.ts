@@ -17,7 +17,6 @@ import {
 import { Prisma, Role } from '@prisma/client';
 import { hash, verify } from '@node-rs/argon2';
 import { createHash, randomBytes } from 'node:crypto';
-import { authenticator } from 'otplib';
 import { z } from 'zod';
 import type { Request, Response } from 'express';
 import { Database } from './database';
@@ -184,13 +183,6 @@ export class AuthController {
     });
     if (!user || !(await verify(user.passwordHash, input.password)))
       throw new UnauthorizedException('Invalid credentials');
-    if (
-      user.role === 'ADMIN' &&
-      (!user.mfaSecret ||
-        !input.code ||
-        !authenticator.check(input.code, user.mfaSecret))
-    )
-      throw new UnauthorizedException('Valid administrator MFA required');
     return this.session(user.id, res);
   }
   @Post('refresh') async refresh(
