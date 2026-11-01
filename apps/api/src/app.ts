@@ -9,6 +9,8 @@ import { APP_GUARD, NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { Database } from './database';
+import { ContractMaintenance } from './contract-maintenance';
+import { ContractLegacyController } from './contract-legacy';
 import type { Express } from 'express';
 import { AuthController, SessionGuard } from './auth';
 import { MarketplaceController } from './marketplace';
@@ -17,6 +19,16 @@ import { OrganisationsController } from './organisations';
 import { LocationRetention } from './retention';
 import { DatabaseErrorFilter } from './errors';
 import { IntelligenceController } from './intelligence';
+import {
+  ContractAuthController,
+  ContractMailController,
+} from './contract-auth';
+import {
+  ContractController,
+  ContractPublicController,
+  ContractService,
+  OptionalSessionGuard,
+} from './contract';
 @Controller('v1')
 class HealthController {
   constructor(@Inject(Database) private readonly db: Database) {}
@@ -41,10 +53,18 @@ class HealthController {
     OperationsController,
     OrganisationsController,
     IntelligenceController,
+    ContractController,
+    ContractPublicController,
+    ContractAuthController,
+    ContractMailController,
+    ContractLegacyController,
   ],
   providers: [
     Database,
     SessionGuard,
+    ContractService,
+    ContractMaintenance,
+    OptionalSessionGuard,
     LocationRetention,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
@@ -63,7 +83,7 @@ export async function createApp() {
   app.enableCors({
     origin: (
       process.env.WEB_ORIGINS ??
-      'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004'
+      'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:5173,http://localhost:4173'
     ).split(','),
     credentials: true,
   });

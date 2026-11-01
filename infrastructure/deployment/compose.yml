@@ -67,6 +67,7 @@ services:
       APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?Regenerate deployment configuration or add a runtime DB secret}
       DATABASE_URL: postgresql://convyn:${POSTGRES_PASSWORD}@postgres:5432/convyn
     networks: [data]
+    volumes: [uploads_data:/app/uploads:ro]
     profiles: [tools]
     depends_on:
       postgres: { condition: service_healthy }
@@ -81,9 +82,23 @@ services:
       NODE_ENV: production
       PORT: '4000'
       TRUST_PROXY: '1'
+      FILE_UPLOAD_ROOT: /app/uploads
+      APP_ORIGIN: ${APP_ORIGIN:-https://www.convyn.cloud}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
       DATABASE_URL: postgresql://convyn_app:${APP_DATABASE_PASSWORD}@postgres:5432/convyn
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       WEB_ORIGINS: https://${CUSTOMER_DOMAIN},https://${PROVIDER_DOMAIN},https://${ADMIN_DOMAIN},https://${BUSINESS_DOMAIN},https://${ENTERPRISE_DOMAIN}
+    volumes: [uploads_data:/app/uploads]
     networks: [data, app]
     depends_on:
       postgres: { condition: service_healthy }
@@ -206,6 +221,7 @@ networks:
   data: { internal: true }
   app: {}
 volumes:
+  uploads_data:
   postgres_data:
   redis_data:
   caddy_data:

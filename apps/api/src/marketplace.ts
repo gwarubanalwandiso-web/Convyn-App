@@ -241,6 +241,7 @@ export class MarketplaceController {
     });
   }
   @Get('opportunities') async opportunities(@Req() req: AuthRequest) {
+    await this.assertNotSuspended(req.actor.id);
     requireRole(req.actor, 'PROVIDER');
     const provider = await this.db.providerProfile.findUniqueOrThrow({
       where: { userId: req.actor.id },
@@ -284,6 +285,7 @@ export class MarketplaceController {
     )
       throw new BadRequestException('Bid validity must be within seven days');
     return this.atomic(async (tx) => {
+      await this.assertNotSuspended(req.actor.id, tx);
       const provider = await tx.providerProfile.findUniqueOrThrow({
         where: { userId: req.actor.id },
       });
@@ -362,6 +364,7 @@ export class MarketplaceController {
         bid.request.cancelledAt
       )
         throw new ConflictException('Bid expired or withdrawn');
+      await this.assertNotSuspended(bid.provider.userId, tx);
       if (bid.provider.verification !== 'APPROVED' || !bid.provider.available)
         throw new ConflictException('Provider no longer eligible');
       const eligibility = await tx.providerProfile.updateMany({
@@ -540,6 +543,16 @@ export class MarketplaceController {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+  private async assertNotSuspended(
+    userId: string,
+    tx: Prisma.TransactionClient = this.db,
+  ) {
+    const result = await tx.$queryRaw<
+      { suspended: boolean }[]
+    >`SELECT marketplace.provider_is_suspended(${userId}::uuid) AS suspended`;
+    if (result[0].suspended)
+      throw new ForbiddenException('Provider account is suspended');
   }
   private async atomic<T>(
     operation: (tx: Prisma.TransactionClient) => Promise<T>,

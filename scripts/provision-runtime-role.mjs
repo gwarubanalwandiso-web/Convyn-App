@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { Client } from 'pg';
 import { Prisma } from '@prisma/client';
 const password = process.env.APP_DATABASE_PASSWORD;
@@ -35,6 +36,12 @@ try {
   );
   await client.query(
     'REVOKE UPDATE,DELETE ON TABLE public."AuditLog" FROM convyn_app',
+  );
+  await client.query(
+    await readFile(
+      new URL('../prisma/contract-grants.sql', import.meta.url),
+      'utf8',
+    ),
   );
   await client.query('COMMIT');
   console.log(

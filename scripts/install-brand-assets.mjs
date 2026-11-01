@@ -46,6 +46,26 @@ for (const role of [
     resolve(app, 'app/apple-icon.png'),
   );
 }
+await mkdir(resolve(root, 'apps/marketplace-web/public/brand'), {
+  recursive: true,
+});
+for (const name of names)
+  await copyFile(
+    resolve(source, name),
+    resolve(root, 'apps/marketplace-web/public/brand', name),
+  );
+await copyFile(
+  resolve(source, 'convyn-mark-black.png'),
+  resolve(root, 'apps/marketplace-web/public/favicon.png'),
+);
+const htmlPath = resolve(root, 'apps/marketplace-web/index.html');
+let html = await readFile(htmlPath, 'utf8');
+if (!html.includes('href="/favicon.png"'))
+  html = html.replace(
+    '</head>',
+    '<link rel="icon" type="image/png" href="/favicon.png" /></head>',
+  );
+await writeFile(htmlPath, html);
 await mkdir(resolve(root, 'packages/mobile-ui/assets/brand'), {
   recursive: true,
 });

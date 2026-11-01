@@ -9,4 +9,8 @@ export default tseslint.config(
     ],
   },
   ...tseslint.configs.recommended,
+  {
+    files: ['**/*.jsx'],
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+  },
 );

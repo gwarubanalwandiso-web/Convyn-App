@@ -32,3 +32,11 @@ Administrator MFA enforcement is temporarily disabled by user request. Login and
 ## CONVYN visual identity
 
 Lato web WOFF2 fonts are vendored from `@fontsource/lato` 5.3.0 and native TTF fonts from `@expo-google-fonts/lato` 0.4.1, with their SIL Open Font License files. Fonts are self-hosted; there is no external browser font request. The existing resolved Expo font package 14.0.12 is now explicitly declared for both apps. Original logo PNG bytes remain pending upload; no logo CDN or new component library is introduced. See BRAND_IMPLEMENTATION.md.
+
+## Existing-database marketplace update (2026-11-01)
+
+The user selected the existing PostgreSQL database rather than a new Supabase project. No Supabase credentials are required. Vite, React Query, Radix/shadcn-style controls, Lucide and React Router are bundled frontend dependencies. New backend packages are nodemailer (SMTP), file-type (content inspection) and jose (Google identity verification); their patched versions are pinned in the frozen lockfile. React Router was updated to 7.18.2 for its current security fix.
+
+Private authenticated filesystem storage is implemented and persists through the Compose uploads volume; external object storage remains unconfigured. SMTP recovery, invitations and notification delivery have passed through a local test server, but real SMTP credentials and sender configuration remain absent. Google OAuth and the optional OpenAI request helper require server secrets; their external service round trips are unverified. Missing integrations remain unavailable, with no fabricated AI result or delivery success. All credentials remain server-side.
+
+The configured package proxy works for frozen installation and new Docker image builds. GitHub publishing uses the existing connected remote. Outbound SSH to the VPS is not granted by the current managed network policy. Existing native signing/device and payment-provider dependencies remain outstanding. Original logo uploads remain pending; approved font/style tokens are retained. See MARKETPLACE_UPDATE.md for exact variable names and deployment limits.

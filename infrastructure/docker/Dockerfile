@@ -2,6 +2,7 @@
 FROM node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
@@ -57,3 +58,13 @@ COPY --chown=node:node scripts/migrate.mjs scripts/seed-categories.mjs scripts/c
 ENV NODE_ENV=production
 USER node
 CMD ["node", "scripts/migrate.mjs"]
+
+FROM base AS marketplace-web
+ENV NODE_ENV=production PORT=3000
+COPY --from=build --chown=node:node /app/apps/marketplace-web/dist/ ./public/
+COPY --chown=node:node infrastructure/docker/serve-marketplace.mjs ./serve-marketplace.mjs
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
+ CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "serve-marketplace.mjs"]

@@ -1,0 +1,18 @@
+# Opt-in cutover: review legacy active jobs before replacing the three portal roots.
+# Business/enterprise portals remain available with their existing workflows.
+services:
+  customer:
+    build:
+      target: marketplace-web
+    environment:
+      PORTAL: customer
+  provider:
+    build:
+      target: marketplace-web
+    environment:
+      PORTAL: provider
+  admin:
+    build:
+      target: marketplace-web
+    environment:
+      PORTAL: admin

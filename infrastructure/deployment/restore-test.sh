@@ -12,4 +12,14 @@ trap cleanup EXIT
 count=$("${compose[@]}" exec -T postgres psql -XAt -U convyn -d "$database" -c 'SELECT count(*) FROM convyn_schema_migrations;')
 [[ $count =~ ^[0-9]+$ ]] && (( count > 0 ))
 "${compose[@]}" exec -T postgres psql -XAt -U convyn -d "$database" -c 'SELECT PostGIS_Version();' >/dev/null
+has_contract=$("${compose[@]}" exec -T postgres psql -XAt -U convyn -d "$database" -c "SELECT to_regnamespace('marketplace') IS NOT NULL;")
+if [[ $has_contract == t ]]; then
+  "${compose[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U convyn -d "$database" < "$repo_dir/prisma/contract-grants.sql" >/dev/null
+  visible=$("${compose[@]}" exec -T postgres psql -XAt -U convyn -d "$database" -c 'SET ROLE convyn_marketplace; SELECT count(*) FROM marketplace."ServiceRequest";' | tail -n 1)
+  [[ $visible == 0 ]]
+fi
+if [[ -f "$backup_file.uploads.tar.gz" ]]; then
+  (cd -- "$(dirname -- "$backup_file")" && sha256sum --check --status "$(basename -- "$backup_file.uploads.tar.gz.sha256")")
+  tar -tzf "$backup_file.uploads.tar.gz" >/dev/null
+fi
 printf 'PASS: backup restored into an isolated temporary database; %s migrations verified. Live database untouched.\n' "$count"

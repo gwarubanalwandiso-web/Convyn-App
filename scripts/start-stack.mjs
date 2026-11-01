@@ -1,21 +1,37 @@
 import { spawn } from 'node:child_process';
+const marketplace = process.argv.includes('--marketplace');
 const definitions = [
   ['api', process.execPath, ['--env-file=.env', 'apps/api/dist/main.js']],
-  ...['customer', 'provider', 'admin', 'business', 'enterprise'].map(
-    (role, index) => [
-      role,
-      'pnpm',
-      [
-        '--filter',
-        `@convyn/${role}-web`,
-        'exec',
-        'next',
-        'start',
-        '-p',
-        String(3000 + index),
-      ],
+  ...(marketplace
+    ? [
+        [
+          'marketplace',
+          'pnpm',
+          ['--filter', '@convyn/marketplace-web', 'preview'],
+        ],
+      ]
+    : []),
+  ...(marketplace
+    ? ['business', 'enterprise']
+    : ['customer', 'provider', 'admin', 'business', 'enterprise']
+  ).map((role) => [
+    role,
+    'pnpm',
+    [
+      '--filter',
+      `@convyn/${role}-web`,
+      'exec',
+      'next',
+      'start',
+      '-p',
+      String(
+        3000 +
+          ['customer', 'provider', 'admin', 'business', 'enterprise'].indexOf(
+            role,
+          ),
+      ),
     ],
-  ),
+  ]),
 ];
 const children = [];
 let closing = false;
@@ -74,7 +90,9 @@ for (const [name, command, args] of definitions) {
 const apiPort = Number(process.env.PORT ?? 4000);
 const targets = [
   `http://127.0.0.1:${apiPort}/v1/ready`,
-  ...[3000, 3001, 3002, 3003, 3004].map((port) => `http://127.0.0.1:${port}`),
+  ...(marketplace ? [4173, 3003, 3004] : [3000, 3001, 3002, 3003, 3004]).map(
+    (port) => `http://127.0.0.1:${port}`,
+  ),
 ];
 let ready = false;
 for (let attempt = 0; attempt < 100 && !closing; attempt++) {
@@ -95,7 +113,9 @@ for (let attempt = 0; attempt < 100 && !closing; attempt++) {
 }
 if (ready && !closing)
   console.log(
-    'CONVYN development API and all five portals are ready. Stop this process to stop only its managed services.',
+    marketplace
+      ? 'CONVYN marketplace is ready at http://localhost:4173; existing business and enterprise portals remain at ports 3003 and 3004.'
+      : 'CONVYN development API and all five portals are ready. Stop this process to stop only its managed services.',
   );
 else if (!closing) {
   console.error('Development stack readiness checks failed');

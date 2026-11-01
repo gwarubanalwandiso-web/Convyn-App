@@ -2,6 +2,12 @@
 
 South African on-demand services marketplace. The core **development** marketplace is operational and tested; commercial deployment is not approved.
 
+## Updated marketplace
+
+The new React/Vite application reuses the existing PostgreSQL database, accounts and Nest API. CONVYN’s monochrome branding and bundled Lato fonts are retained. See [MARKETPLACE_UPDATE.md](docs/MARKETPLACE_UPDATE.md) for routes, database compatibility, integrations and the opt-in server cutover.
+
+After the installation, migration and build steps below, run `pnpm start:marketplace` and open `http://localhost:4173`. For editing, run `pnpm start:api` and `pnpm dev:marketplace` in separate terminals (Vite uses port 5173). The existing five-portal launcher remains available.
+
 ## Start locally
 
 Requirements: Node 24 LTS, pnpm 11.25.0, Docker with Compose, and available ports 3000–3004, 4000, 5432 and 6379.
@@ -17,11 +23,11 @@ pnpm start:stack
 
 `setup:local` creates a private ignored `.env` with randomly generated development database credentials **only if absent**, starts PostGIS and Redis, generates the Prisma client, applies migrations and seeds categories. Existing environment files and application records are preserved. Review `.env.example` when supplying your own settings.
 
-Register customer/provider accounts through their respective portals. Providers submit qualification details, an administrator reviews them, and approved providers can go online and bid. The customer compares bids and accepts one. The provider advances the job, supplies a completion note, and the customer confirms and reviews it. Online payment is not collected. Qualification documents and external checks are not yet integrated.
+Register customer/provider accounts through their respective portals. Providers submit qualification details, an administrator reviews them, and approved providers can go online and bid. The customer compares bids and accepts one. The provider advances the job, supplies a completion note, and the customer confirms and reviews it. Online payment is not collected. The new marketplace supports private qualification uploads and administrator review; external credential verification remains unconfigured.
 
-There is no public administrator registration. Supply `ADMIN_EMAIL`, a 16+ character `ADMIN_PASSWORD`, and a base32 `ADMIN_MFA_SECRET` through secure environment variables, then run `pnpm admin:create`. Enrol the same TOTP secret in your authenticator securely; no credentials are printed. Administrator login requires its current code. Production encryption/key management for MFA secrets remains pending.
+There is no public administrator registration. Supply `ADMIN_EMAIL` and a private 16+ character `ADMIN_PASSWORD` through environment secrets, then run `pnpm admin:create`. Administrator MFA enforcement remains temporarily disabled at the owner’s request; passwords and server-side role checks remain required. No default password is committed or installed.
 
-API: `/v1/health`, `/v1/ready`, `/docs` and `/docs-json`. See docs/API.md. Access tokens remain in browser memory; refresh tokens use an HttpOnly SameSite cookie. Tokens expire and can be rotated/revoked through the API; the portal currently requires sign-in again after reload or access expiry.
+API: `/v1/health`, `/v1/ready`, `/docs` and `/docs-json`. See docs/API.md. Access tokens remain in browser memory; refresh tokens use an HttpOnly SameSite cookie. Tokens expire and can be rotated/revoked through the API; the new marketplace restores sessions through that cookie.
 
 ## Checks
 
@@ -33,6 +39,8 @@ pnpm test
 pnpm build
 pnpm test:integration
 pnpm test:web
+pnpm test:contract
+pnpm test:marketplace-web
 ```
 
 Integration tests create and retain a local `convyn_test` database and require a local database URL; they refuse production or remote database targets. API tests start a separate API on port 4019. Browser tests start their own API on 4000 and three built portals; those ports must be free. They use the installed Chromium at `/usr/bin/chromium`, configurable with `CHROMIUM_PATH`. Alternatively install Playwright Chromium and run `USE_PLAYWRIGHT_BROWSER=1 pnpm test:web`. Run integration tests before browser tests to prepare their database. Browser tests now start all five portals on 3000–3004. Synthetic test users are unique per run and retained for inspection.

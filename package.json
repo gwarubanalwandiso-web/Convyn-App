@@ -21,7 +21,14 @@
     "setup:local": "node scripts/setup.mjs",
     "admin:create": "node --env-file=.env scripts/create-admin.mjs",
     "start:api": "node --env-file=.env apps/api/dist/main.js",
-    "start:stack": "node --env-file=.env scripts/start-stack.mjs"
+    "start:stack": "node --env-file=.env scripts/start-stack.mjs",
+    "dev:marketplace": "pnpm --filter @convyn/marketplace-web dev",
+    "build:marketplace": "pnpm --filter @convyn/api build && pnpm --filter @convyn/marketplace-web build",
+    "test:contract": "pnpm --filter @convyn/api build && node --env-file=.env scripts/test-contract.mjs",
+    "test:marketplace-web": "playwright test -c playwright.marketplace.config.ts",
+    "demo:marketplace": "node --env-file=.env scripts/seed-marketplace-demo.mjs",
+    "start:marketplace": "node --env-file=.env scripts/start-stack.mjs --marketplace",
+    "test:marketplace-deployment": "node tests/integration/deployment-contract.mjs"
   },
   "devDependencies": {
     "turbo": "2.5.6",
