@@ -1,0 +1,43 @@
+{
+  "name": "convyn",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "node --test tests/unit/*.test.mjs",
+    "db:generate": "prisma generate",
+    "db:migrate": "node --env-file=.env scripts/migrate.mjs",
+    "db:seed": "node --env-file=.env --import tsx prisma/seed/index.ts",
+    "test:integration": "pnpm --filter @convyn/api build && node --env-file=.env scripts/test-integration.mjs",
+    "test:web": "playwright test",
+    "format": "prettier --write .",
+    "setup:local": "node scripts/setup.mjs",
+    "admin:create": "node --env-file=.env scripts/create-admin.mjs",
+    "start:api": "node --env-file=.env apps/api/dist/main.js",
+    "start:stack": "node --env-file=.env scripts/start-stack.mjs"
+  },
+  "devDependencies": {
+    "turbo": "2.5.6",
+    "typescript": "5.9.3",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6",
+    "eslint": "9.39.1",
+    "typescript-eslint": "8.46.4",
+    "prettier": "3.6.2",
+    "@types/node": "24.10.0",
+    "@prisma/client": "6.19.3",
+    "@node-rs/argon2": "2.2.2",
+    "otplib": "12.0.1",
+    "@prisma/adapter-pg": "6.19.3",
+    "dotenv": "17.2.3",
+    "pg": "8.16.3",
+    "@playwright/test": "1.56.1"
+  }
+}

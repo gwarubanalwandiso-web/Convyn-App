@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+  esbuild: true
+  sharp: true
+  '@scarf/scarf': false
+  msgpackr-extract: false
+
+storeDir: ../.pnpm-store
+overrides:
+  'path-to-regexp@>=8.0.0 <8.4.0': 8.4.0
+  'multer@>=2.0.0 <2.5.0': 2.5.0
+  'postcss@>=8.0.0 <8.5.18': 8.5.18
+  'sharp@>=0.34.0 <0.35.5': 0.35.5

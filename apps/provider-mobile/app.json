@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "provider-mobile",
+    "slug": "convyn-provider-mobile",
+    "scheme": "provider-mobile",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CONVYN to use your location for a service address or an authorised booking."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "za.co.convyn.provider"
+    },
+    "android": {
+      "package": "za.co.convyn.provider"
+    },
+    "platforms": ["ios", "android"]
+  }
+}

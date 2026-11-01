@@ -1,0 +1,11 @@
+{
+  "name": "@convyn/worker",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "5.63.0"
+  }
+}

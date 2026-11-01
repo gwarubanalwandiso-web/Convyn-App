@@ -1,0 +1,387 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum Verification {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  MORE_INFORMATION_REQUIRED
+  APPROVED
+  REJECTED
+  SUSPENDED
+  EXPIRED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  EN_ROUTE
+  ARRIVED
+  IN_PROGRESS
+  AWAITING_CONFIRMATION
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String               @id @default(uuid()) @db.Uuid
+  email         String               @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  mobile        String
+  consentAt     DateTime             @db.Timestamptz
+  mfaSecret     String?
+  sessions      Session[]
+  role          Role                 @default(CUSTOMER)
+  createdAt     DateTime             @default(now()) @db.Timestamptz
+  provider      ProviderProfile?
+  requests      ServiceRequest[]
+  reviews       Review[]
+  notifications Notification[]
+  memberships   OrganisationMember[]
+  messages      Message[]
+  tickets       SupportTicket[]
+}
+
+model ProviderProfile {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @unique @db.Uuid
+  user          User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  verification  Verification @default(DRAFT)
+  available     Boolean      @default(false)
+  categories    String[]     @default([])
+  latitude      Float        @default(-33.96)
+  longitude     Float        @default(25.60)
+  radiusKm      Int          @default(30)
+  qualification String?
+  submittedAt   DateTime?    @db.Timestamptz
+  bids          Bid[]
+}
+
+model Category {
+  id       String           @id @default(uuid()) @db.Uuid
+  name     String           @unique
+  requests ServiceRequest[]
+}
+
+model ServiceRequest {
+  id             String                @id @default(uuid()) @db.Uuid
+  customerId     String                @db.Uuid
+  customer       User                  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  categoryId     String                @db.Uuid
+  category       Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description    String
+  latitude       Float
+  longitude      Float
+  urgency        String                @default("STANDARD")
+  publishedAt    DateTime?             @db.Timestamptz
+  createdAt      DateTime              @default(now()) @db.Timestamptz
+  scheduledAt    DateTime?             @db.Timestamptz
+  instructions   String                @default("")
+  cancelledAt    DateTime?             @db.Timestamptz
+  organisationId String?               @db.Uuid
+  organisation   Organisation?         @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  approval       OrganisationApproval?
+  bids           Bid[]
+  booking        Booking?
+
+  @@index([customerId, createdAt])
+  @@index([categoryId, publishedAt])
+}
+
+model Bid {
+  id             String          @id @default(uuid()) @db.Uuid
+  requestId      String          @db.Uuid
+  request        ServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  providerId     String          @db.Uuid
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  totalMinor     BigInt
+  currency       String          @default("ZAR") @db.Char(3)
+  pricingVersion String
+  arrivalMinutes Int
+  comment        String
+  expiresAt      DateTime        @db.Timestamptz
+  withdrawnAt    DateTime?       @db.Timestamptz
+  booking        Booking?
+
+  @@unique([requestId, providerId])
+}
+
+model Booking {
+  id                   String          @id @default(uuid()) @db.Uuid
+  requestId            String          @unique @db.Uuid
+  request              ServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  bidId                String          @unique @db.Uuid
+  bid                  Bid             @relation(fields: [bidId], references: [id], onDelete: Restrict)
+  status               BookingStatus   @default(CONFIRMED)
+  createdAt            DateTime        @default(now()) @db.Timestamptz
+  review               Review?
+  completionNote       String?
+  events               BookingEvent[]
+  cancellationReason   String?
+  messages             Message[]
+  dispute              Dispute?
+  locationEvents       LocationEvent[]
+  trackingConsentUntil DateTime?       @db.Timestamptz
+  invoice              Invoice?
+}
+
+model Review {
+  id        String  @id @default(uuid()) @db.Uuid
+  bookingId String  @unique @db.Uuid
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  authorId  String  @db.Uuid
+  author    User    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  rating    Int
+  comment   String
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event     String
+  readAt    DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  @@index([userId, createdAt])
+}
+
+model Session {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash       String    @unique
+  refreshHash     String    @unique
+  accessExpiresAt DateTime  @db.Timestamptz
+  expiresAt       DateTime  @db.Timestamptz
+  revokedAt       DateTime? @db.Timestamptz
+
+  @@index([userId])
+}
+
+model BookingEvent {
+  id        String        @id @default(uuid()) @db.Uuid
+  bookingId String        @db.Uuid
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  actorId   String        @db.Uuid
+  status    BookingStatus
+  createdAt DateTime      @default(now()) @db.Timestamptz
+
+  @@index([bookingId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String   @db.Uuid
+  action    String
+  subjectId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([actorId, createdAt])
+}
+
+enum OrganisationRole {
+  OWNER
+  ADMIN
+  APPROVER
+  MEMBER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Message {
+  id        String    @id @default(uuid()) @db.Uuid
+  bookingId String    @db.Uuid
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  senderId  String    @db.Uuid
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  clientId  String    @db.Uuid
+  text      String
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  readAt    DateTime? @db.Timestamptz
+
+  @@unique([senderId, clientId])
+  @@index([bookingId, createdAt])
+}
+
+model Dispute {
+  id         String       @id @default(uuid()) @db.Uuid
+  bookingId  String       @unique @db.Uuid
+  booking    Booking      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  openedBy   String       @db.Uuid
+  reason     String
+  status     TicketStatus @default(OPEN)
+  resolution String?
+  createdAt  DateTime     @default(now()) @db.Timestamptz
+  resolvedAt DateTime?    @db.Timestamptz
+}
+
+model SupportTicket {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @db.Uuid
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+  response    String?
+  createdAt   DateTime     @default(now()) @db.Timestamptz
+  updatedAt   DateTime     @updatedAt @db.Timestamptz
+
+  @@index([userId, createdAt])
+}
+
+model LocationEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  bookingId      String   @db.Uuid
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  latitude       Float
+  longitude      Float
+  accuracyMetres Float
+  observedAt     DateTime @db.Timestamptz
+  expiresAt      DateTime @db.Timestamptz
+
+  @@index([bookingId, observedAt])
+  @@index([expiresAt])
+}
+
+model Invoice {
+  id         String   @id @default(uuid()) @db.Uuid
+  bookingId  String   @unique @db.Uuid
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  number     String   @unique
+  totalMinor BigInt
+  currency   String   @default("ZAR") @db.Char(3)
+  issuedAt   DateTime @default(now()) @db.Timestamptz
+  status     String   @default("UNPAID")
+}
+
+model Organisation {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  name               String
+  kind               String                 @default("BUSINESS")
+  spendingLimitMinor BigInt                 @default(10000000)
+  createdAt          DateTime               @default(now()) @db.Timestamptz
+  members            OrganisationMember[]
+  departments        Department[]
+  costCentres        CostCentre[]
+  locations          OrganisationLocation[]
+  requests           ServiceRequest[]
+  contracts          ServiceContract[]
+}
+
+model OrganisationMember {
+  organisationId String           @db.Uuid
+  organisation   Organisation     @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  userId         String           @db.Uuid
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role           OrganisationRole @default(MEMBER)
+
+  @@id([organisationId, userId])
+  @@index([userId])
+}
+
+model Department {
+  id             String       @id @default(uuid()) @db.Uuid
+  organisationId String       @db.Uuid
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  name           String
+
+  @@unique([organisationId, name])
+}
+
+model CostCentre {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organisationId String                 @db.Uuid
+  organisation   Organisation           @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  code           String
+  name           String
+  approvals      OrganisationApproval[]
+
+  @@unique([organisationId, code])
+}
+
+model OrganisationLocation {
+  id             String       @id @default(uuid()) @db.Uuid
+  organisationId String       @db.Uuid
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  name           String
+  address        String
+  latitude       Float
+  longitude      Float
+
+  @@unique([organisationId, name])
+}
+
+model OrganisationApproval {
+  id            String         @id @default(uuid()) @db.Uuid
+  requestId     String         @unique @db.Uuid
+  request       ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  costCentreId  String         @db.Uuid
+  costCentre    CostCentre     @relation(fields: [costCentreId], references: [id], onDelete: Restrict)
+  budgetMinor   BigInt
+  purchaseOrder String
+  status        ApprovalStatus @default(PENDING)
+  decidedBy     String?        @db.Uuid
+  decidedAt     DateTime?      @db.Timestamptz
+}
+
+model ServiceContract {
+  id              String       @id @default(uuid()) @db.Uuid
+  organisationId  String       @db.Uuid
+  organisation    Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  name            String
+  terms           String
+  startsAt        DateTime     @db.Timestamptz
+  endsAt          DateTime     @db.Timestamptz
+  responseMinutes Int
+  escalationEmail String
+
+  @@index([organisationId, endsAt])
+}
+
+model ScoringRule {
+  id        String   @id @default(uuid()) @db.Uuid
+  version   String   @unique
+  weights   Json
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+
+model Recommendation {
+  id          String   @id @default(uuid()) @db.Uuid
+  requestId   String   @db.Uuid
+  providerId  String   @db.Uuid
+  version     String
+  input       Json
+  components  Json
+  score       Float
+  explanation String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([requestId, createdAt])
+}

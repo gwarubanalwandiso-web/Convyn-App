@@ -1,0 +1,9 @@
+# Security
+
+Implemented and tested: Argon2id password hashing; cryptographically random opaque access/refresh tokens stored only as SHA-256 digests; atomic refresh rotation, expiry and revocation; server-side role/ownership guards; admin TOTP enforcement; strict mutation validation; in-process rate limiting; transaction-protected acceptance; exact opportunity coordinate redaction; SQL invariants; restricted local infrastructure ports and ignored local credentials.
+
+Authentication does not yet include email verification, password recovery, OAuth, account deletion/export or complete identity proofing. Provider approval currently reviews submitted text, not externally verified documents. TOTP secrets are stored in the database and still require production envelope encryption with a managed key. MFA anti-replay, refresh-family replay revocation, audited account suspension and shared rate limiting need hardening. Access tokens are never persisted in localStorage.
+
+Organisation endpoints now enforce membership and role predicates on all reads/mutations. Cross-tenant procurement is additionally rejected by SQL triggers and tested through HTTP and direct database writes. PostgreSQL RLS is not configured. Private document uploads, continuous/background tracking, payments and external notification adapters are unavailable. Booking-scoped foreground GPS observations now require provider consent, are redacted from public discovery, expire quickly and are purged by a retention task. No raw card data or payment success callbacks exist.
+
+Dependency audit still has known Prisma/mobile toolchain findings. See PRODUCTION_READINESS.md. Complete POPIA consent/retention workflows, threat modelling, independent penetration testing, backup/restore review and legal/licensing checks before commercial use. These remain unverified, not presumed compliant.

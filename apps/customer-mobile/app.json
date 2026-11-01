@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "customer-mobile",
+    "slug": "convyn-customer-mobile",
+    "scheme": "customer-mobile",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CONVYN to use your location for a service address or an authorised booking."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "za.co.convyn.customer"
+    },
+    "android": {
+      "package": "za.co.convyn.customer"
+    },
+    "platforms": ["ios", "android"]
+  }
+}

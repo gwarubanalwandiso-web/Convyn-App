@@ -1,0 +1,23 @@
+{
+  "name": "@convyn/mobile-ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.tsx",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@convyn/api-client": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "expo-secure-store": "~15.0.7",
+    "expo-location": "~19.0.7",
+    "expo-crypto": "~15.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10"
+  }
+}

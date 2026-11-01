@@ -1,0 +1,30 @@
+{
+  "name": "@convyn/customer-mobile",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "typecheck": "tsc --noEmit",
+    "build": "expo export --platform all --max-workers 2 --output-dir dist/native"
+  },
+  "dependencies": {
+    "expo": "~54.0.23",
+    "expo-router": "~6.0.14",
+    "expo-status-bar": "~3.0.8",
+    "expo-secure-store": "~15.0.7",
+    "expo-location": "~19.0.7",
+    "expo-notifications": "~0.32.12",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "expo-linking": "~8.0.8",
+    "expo-constants": "~18.0.10",
+    "react-dom": "19.1.0",
+    "@convyn/mobile-ui": "workspace:*",
+    "expo-crypto": "~15.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10"
+  }
+}
